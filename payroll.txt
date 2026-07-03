@@ -1,0 +1,504 @@
+@extends('layouts.owner')
+
+@section('title', 'Payroll')
+
+@section('content')
+    <div class="container-fluid py-4">
+
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <h4 class="mb-1">Payroll</h4>
+                <div class="text-sm text-muted">
+                    Working payroll preview (Computed from Completed trips)
+                    <span class="badge bg-light text-primary border ms-2">
+                        {{ $weekStart->format('Y-m-d') }} → {{ $weekEnd->format('Y-m-d') }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <a class="btn btn-outline-secondary" href="{{ route('owner.payroll.history') }}">View History</a>
+            </div>
+        </div>
+
+        @if (session('success'))
+            <div class="alert alert-success">{{ session('success') }}</div>
+        @endif
+
+        {{-- Filter --}}
+        <form method="GET" action="{{ route('owner.payroll.index') }}" class="card mb-3 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">From</label>
+                        <input type="date" name="from" class="form-control" value="{{ $from }}">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">To</label>
+                        <input type="date" name="to" class="form-control" value="{{ $to }}">
+                    </div>
+                    <div class="col-md-3 d-grid">
+                        <button class="btn btn-primary">Apply</button>
+                    </div>
+                    <div class="col-md-3 text-muted small">
+                        Tip: For weekly payroll, set From = Monday and To = Sunday.
+                    </div>
+                </div>
+            </div>
+        </form>
+
+
+        <div class="row g-3 mb-3 align-items-stretch">
+            <!-- Left: Drivers + Helpers -->
+            <div class="col-lg-8">
+                <div class="row g-3 h-100">
+                    <div class="col-md-6 d-flex">
+                        <div class="card border-0 shadow-sm flex-fill h-100">
+                            <div class="card-body d-flex flex-column justify-content-between h-100">
+                                <div>
+                                    <div class="text-muted small d-flex justify-content-between">
+                                        <span>Drivers Total</span><span class="fw-semibold text-primary">12%</span>
+                                    </div>
+                                    <div class="fs-4 fw-bold">₱ {{ number_format($driversTotal, 2) }}</div>
+                                    <div class="text-muted small">{{ $driversPayroll->count() }} driver(s)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 d-flex">
+                        <div class="card border-0 shadow-sm flex-fill h-100">
+                            <div class="card-body d-flex flex-column justify-content-between h-100">
+                                <div>
+                                    <div class="text-muted small d-flex justify-content-between">
+                                        <span>Helpers Total</span><span class="fw-semibold text-primary">10%</span>
+                                    </div>
+                                    <div class="fs-4 fw-bold">₱ {{ number_format($helpersTotal, 2) }}</div>
+                                    <div class="text-muted small">{{ $helpersPayroll->count() }} helper(s)</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Grand Total + Billed Trips -->
+            <div class="col-lg-4 d-flex flex-column gap-3 h-100">
+                <div class="card border-0 shadow-sm flex-fill h-100">
+                    <div class="card-body d-flex flex-column justify-content-between h-100">
+                        <div>
+                            <div class="text-muted small">Grand Total</div>
+                            <div class="fs-4 fw-bold">₱ {{ number_format($grandTotal, 2) }}</div>
+                            <div class="text-muted small">Drivers + Helpers</div>
+                        </div>
+                    </div>
+                </div>
+                @php
+                    $billedTrips = \App\Models\DispatchTrip::with(['destination', 'truck', 'driver'])
+                        ->where('billing_status', 'Billed')
+                        ->whereNotNull('check_release_date')
+                        ->where('added_to_payroll', true)
+                        ->when($from && $to, function ($q) use ($from, $to) {
+                            return $q->whereBetween('dispatch_date', [$from, $to]);
+                        })
+                        ->orderByDesc('check_release_date')
+                        ->limit(10)
+                        ->get();
+                @endphp
+                <div class="card border-0 shadow-sm flex-fill h-100">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div class="fw-semibold">Billed Trips</div>
+                        <div class="text-muted small">{{ $billedTrips->count() }}</div>
+                    </div>
+                    <div class="card-body p-2" style="max-height: 400px; overflow-y: auto;">
+                        @if ($billedTrips->isEmpty())
+                            <div class="text-muted small p-2">No billed trips in the selected range.</div>
+                        @else
+                            <div class="d-grid gap-2">
+                                @foreach ($billedTrips as $bt)
+                                    <div class="p-2 border rounded bg-white small d-flex justify-content-between align-items-center billed-trip-row"
+                                        style="cursor:pointer;" data-bs-toggle="modal"
+                                        data-bs-target="#billedTripModal{{ $bt->id }}">
+                                        <div class="fw-semibold">#{{ $bt->id }}</div>
+                                        <div class="text-muted small flex-fill ms-2">
+                                            {{ $bt->destination->store_name ?? '-' }}</div>
+                                        <div>
+                                            <span
+                                                class="badge {{ $bt->billing_status === 'Billed' ? 'bg-success' : 'bg-secondary' }}">{{ $bt->billing_status }}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Modal for trip details -->
+                                    <div class="modal fade" id="billedTripModal{{ $bt->id }}" tabindex="-1"
+                                        aria-labelledby="billedTripModalLabel{{ $bt->id }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="billedTripModalLabel{{ $bt->id }}">
+                                                        Trip #{{ $bt->id }} Details</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                        aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <ul class="list-group list-group-flush">
+                                                        <li class="list-group-item"><strong>Trip Ticket No:</strong>
+                                                            {{ $bt->trip_ticket_no }}</li>
+                                                        <li class="list-group-item"><strong>Destination:</strong>
+                                                            {{ $bt->destination->store_name ?? '-' }}</li>
+                                                        <li class="list-group-item"><strong>Status:</strong>
+                                                            {{ $bt->status }}</li>
+                                                        <li class="list-group-item"><strong>Billing Status:</strong>
+                                                            {{ $bt->billing_status }}</li>
+                                                        <li class="list-group-item"><strong>Dispatch Date:</strong>
+                                                            {{ optional($bt->dispatch_date)->format('Y-m-d') ?? '-' }}</li>
+                                                        <li class="list-group-item"><strong>Dispatched At:</strong>
+                                                            {{ optional($bt->dispatched_at)->format('Y-m-d h:i A') ?? '-' }}
+                                                        </li>
+                                                        <li class="list-group-item"><strong>Truck:</strong>
+                                                            {{ $bt->truck->plate_number ?? '-' }}</li>
+                                                        <li class="list-group-item"><strong>Driver:</strong>
+                                                            {{ $bt->driver->name ?? '-' }}</li>
+                                                        <li class="list-group-item">
+                                                            <strong>Helpers:</strong>
+                                                            {{ $bt->helpers->pluck('name')->join(', ') ?: '-' }}
+                                                        </li>
+                                                        <li class="list-group-item"><strong>Remarks:</strong>
+                                                            {{ $bt->remarks ?? '-' }}</li>
+                                                    </ul>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary"
+                                                        data-bs-dismiss="modal">Close</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-3">
+            <div class="col-lg-8">
+                {{-- Tabs --}}
+                <ul class="nav nav-pills gap-2 mb-3">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabDrivers"
+                            type="button">
+                            Drivers <span class="badge bg-light text-dark ms-1">{{ $driversPayroll->count() }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabHelpers" type="button">
+                            Helpers <span class="badge bg-light text-dark ms-1">{{ $helpersPayroll->count() }}</span>
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+
+                    {{-- DRIVERS --}}
+                    <div class="tab-pane fade show active" id="tabDrivers">
+                        @forelse($driversPayroll as $p)
+                            @php
+                                $status = $p['status'] ?? 'UNPAID';
+                                $badge = match ($status) {
+                                    'PAID' => 'success',
+                                    'PARTIAL' => 'warning',
+                                    'OVERPAID' => 'info',
+                                    'NO TRIPS' => 'secondary',
+                                    default => 'danger',
+                                };
+                            @endphp
+
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-body p-0">
+
+                                    <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="fw-bold">{{ $p['name'] }} <span
+                                                    class="text-muted small ms-1">Driver</span></div>
+                                            <div class="text-muted small">
+                                                Payroll: ₱ {{ number_format($p['payroll_total'], 2) }}
+                                                • Paid: ₱ {{ number_format($p['paid_amount'], 2) }}
+                                                • Advance: ₱ {{ number_format($p['advance_amount'], 2) }}
+                                                • Balance: <span class="fw-semibold">₱
+                                                    {{ number_format($p['balance'], 2) }}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge bg-{{ $badge }}">{{ $status }}</span>
+                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                                data-bs-target="#editLedgerDriver{{ $p['person_id'] }}">
+                                                Edit
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr class="text-center">
+                                                    <th style="width: 130px;">DATE</th>
+                                                    <th>LOCATION</th>
+                                                    <th style="width: 140px;">AMOUNT</th>
+                                                    <th>ALLOWANCE</th>
+                                                    <th>INCENTIVE</th>
+                                                    <th>TOTAL SALARY</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse($p['rows'] as $r)
+                                                    <tr>
+                                                        <td class="text-center">{{ $r['date'] }}</td>
+                                                        <td>{{ $r['location'] }}</td>
+                                                        <td class="text-end">{{ number_format($r['amount'], 2) }}</td>
+                                                        <td class="text-end">{{ number_format($r['allowance'], 2) }}</td>
+                                                        <td class="text-end">{{ number_format($r['incentive'], 2) }}</td>
+                                                        <td class="text-end fw-semibold">
+                                                            {{ number_format($r['total_salary'], 2) }}</td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted py-4">No trips in
+                                                            this range.</td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                            <tfoot class="table-light">
+                                                <tr>
+                                                    <th colspan="4" class="text-end">TOTAL:</th>
+                                                    <th class="text-end">₱ {{ number_format($p['payroll_total'], 2) }}
+                                                    </th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            {{-- Edit Modal --}}
+                            <div class="modal fade" id="editLedgerDriver{{ $p['person_id'] }}" tabindex="-1"
+                                aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form method="POST" action="{{ route('owner.payroll.ledger.save') }}">
+                                            @csrf
+                                            <div class="modal-header">
+                                                <h6 class="modal-title">Update Payment / Advance</h6>
+                                                <button type="button" class="btn-close"
+                                                    data-bs-dismiss="modal"></button>
+                                            </div>
+
+                                            <div class="modal-body">
+                                                <input type="hidden" name="week_start"
+                                                    value="{{ $weekStart->toDateString() }}">
+                                                <input type="hidden" name="week_end"
+                                                    value="{{ $weekEnd->toDateString() }}">
+                                                <input type="hidden" name="person_type" value="driver">
+                                                <input type="hidden" name="person_id" value="{{ $p['person_id'] }}">
+
+                                                <div class="mb-2 small text-muted">
+                                                    Driver: <span class="fw-semibold">{{ $p['name'] }}</span> • Payroll
+                                                    Total: ₱ {{ number_format($p['payroll_total'], 2) }}
+                                                </div>
+
+                                                <div class="row g-2">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Paid Amount</label>
+                                                        <input type="number" step="0.01" min="0"
+                                                            name="paid_amount" class="form-control"
+                                                            value="{{ $p['paid_amount'] }}">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Advance (ibabawas)</label>
+                                                        <input type="number" step="0.01" min="0"
+                                                            name="advance_amount" class="form-control"
+                                                            value="{{ $p['advance_amount'] }}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="mt-2">
+                                                    <label class="form-label">Notes (optional)</label>
+                                                    <input type="text" name="notes" class="form-control"
+                                                        value="{{ $p['notes'] }}">
+                                                </div>
+
+                                                <div class="mt-2 small text-muted">
+                                                    Balance = Payroll - Paid - Advance
+                                                </div>
+                                            </div>
+
+                                            <div class="modal-footer">
+                                                <button class="btn btn-outline-secondary"
+                                                    data-bs-dismiss="modal">Close</button>
+                                                <button class="btn btn-primary">Save</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                        @empty
+                            <div class="alert alert-light border">No driver payroll rows found.</div>
+                        @endforelse
+                    </div>
+
+                    {{-- HELPERS --}}
+                    <div class="tab-pane fade" id="tabHelpers">
+                        @forelse($helpersPayroll as $p)
+                            @php
+                                $status = $p['status'] ?? 'UNPAID';
+                                $badge = match ($status) {
+                                    'PAID' => 'success',
+                                    'PARTIAL' => 'warning',
+                                    'OVERPAID' => 'info',
+                                    'NO TRIPS' => 'secondary',
+                                    default => 'danger',
+                                };
+                            @endphp
+
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-body p-0">
+
+                                    <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <div class="fw-bold">{{ $p['name'] }} <span
+                                                    class="text-muted small ms-1">Helper</span></div>
+                                            <div class="text-muted small">
+                                                Payroll: ₱ {{ number_format($p['payroll_total'], 2) }}
+                                                • Paid: ₱ {{ number_format($p['paid_amount'], 2) }}
+                                                • Advance: ₱ {{ number_format($p['advance_amount'], 2) }}
+                                                • Balance: <span class="fw-semibold">₱
+                                                    {{ number_format($p['balance'], 2) }}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge bg-{{ $badge }}">{{ $status }}</span>
+                                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                                                data-bs-target="#editLedgerHelper{{ $p['person_id'] }}">
+                                                Edit
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered align-middle mb-0">
+                                            <thead class="table-light">
+                                                <tr class="text-center">
+                                                    <th style="width: 130px;">DATE</th>
+                                                    <th>LOCATION</th>
+                                                    <th style="width: 140px;">AMOUNT</th>
+                                                    <th style="width: 140px;">ALLOWANCE</th>
+                                                    <th style="width: 160px;">TOTAL SALARY</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse($p['rows'] as $r)
+                                                    <tr>
+                                                        <td class="text-center">{{ $r['date'] }}</td>
+                                                        <td>{{ $r['location'] }}</td>
+                                                        <td class="text-end">{{ number_format($r['amount'], 2) }}</td>
+                                                        <td class="text-end">{{ number_format($r['allowance'], 2) }}</td>
+                                                        <td class="text-end fw-semibold">
+                                                            {{ number_format($r['total_salary'], 2) }}</td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted py-4">No trips in
+                                                            this range.</td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                            <tfoot class="table-light">
+                                                <tr>
+                                                    <th colspan="4" class="text-end">TOTAL:</th>
+                                                    <th class="text-end">₱ {{ number_format($p['payroll_total'], 2) }}
+                                                    </th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            {{-- Edit Modal --}}
+                            <div class="modal fade" id="editLedgerHelper{{ $p['person_id'] }}" tabindex="-1"
+                                aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form method="POST" action="{{ route('owner.payroll.ledger.save') }}">
+                                            @csrf
+                                            <div class="modal-header">
+                                                <h6 class="modal-title">Update Payment / Advance</h6>
+                                                <button type="button" class="btn-close"
+                                                    data-bs-dismiss="modal"></button>
+                                            </div>
+
+                                            <div class="modal-body">
+                                                <input type="hidden" name="week_start"
+                                                    value="{{ $weekStart->toDateString() }}">
+                                                <input type="hidden" name="week_end"
+                                                    value="{{ $weekEnd->toDateString() }}">
+                                                <input type="hidden" name="person_type" value="helper">
+                                                <input type="hidden" name="person_id" value="{{ $p['person_id'] }}">
+
+                                                <div class="mb-2 small text-muted">
+                                                    Helper: <span class="fw-semibold">{{ $p['name'] }}</span> • Payroll
+                                                    Total: ₱ {{ number_format($p['payroll_total'], 2) }}
+                                                </div>
+
+                                                <div class="row g-2">
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Paid Amount</label>
+                                                        <input type="number" step="0.01" min="0"
+                                                            name="paid_amount" class="form-control"
+                                                            value="{{ $p['paid_amount'] }}">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label class="form-label">Advance (ibabawas)</label>
+                                                        <input type="number" step="0.01" min="0"
+                                                            name="advance_amount" class="form-control"
+                                                            value="{{ $p['advance_amount'] }}">
+                                                    </div>
+                                                </div>
+
+                                                <div class="mt-2">
+                                                    <label class="form-label">Notes (optional)</label>
+                                                    <input type="text" name="notes" class="form-control"
+                                                        value="{{ $p['notes'] }}">
+                                                </div>
+
+                                                <div class="mt-2 small text-muted">
+                                                    Balance = Payroll - Paid - Advance
+                                                </div>
+                                            </div>
+
+                                            <div class="modal-footer">
+                                                <button class="btn btn-outline-secondary"
+                                                    data-bs-dismiss="modal">Close</button>
+                                                <button class="btn btn-primary">Save</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                        @empty
+                            <div class="alert alert-light border">No helper payroll rows found.</div>
+                        @endforelse
+                    </div>
+
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    @endsection

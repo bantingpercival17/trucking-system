@@ -100,7 +100,6 @@ class WatsonPayrollController extends Controller
             ->groupBy('truck_id')
             ->map(function ($group) {
                 $truck = optional($group->first()->truck); // ✅ FIX
-
                 $rows = $group->map(function ($t) {
                     return [
                         'date' => $t->dispatch_date,
@@ -109,7 +108,6 @@ class WatsonPayrollController extends Controller
                         'amount' => $t->destination->rate ?? 0,
                     ];
                 });
-
                 return [
                     'plate' => $truck->plate_number ?? 'N/A', // ✅ PER TRUCK
                     'rows' => $rows,
@@ -126,7 +124,6 @@ class WatsonPayrollController extends Controller
             ->groupBy('driver_id')
             ->map(function ($group) {
                 $driver = optional($group->first()->driver);
-
                 return [
                     'name' => $driver->name ?? 'N/A', // ✅ DRIVER NAME NA
                     'trips' => $group->count(),
@@ -148,9 +145,42 @@ class WatsonPayrollController extends Controller
                 ];
             })
             ->values();
+        $trips2 = WatsonTrip::with([
+            'driver',
+            'helper',
+            'truck',
+            'destination'
+        ])
+            ->where('status', 'Completed')
+            ->whereBetween('dispatch_date', [$from, $to])
+            ->get();
+        $helpersPayroll = $trips2
+            ->groupBy('helper_id')
+            ->map(function ($group) {
 
+                $helper = optional($group->first()->helper);
+
+                return [
+                    'name' => $helper->helper->name ?? 'N/A',
+                    'trips' => $group->count(),
+                    'amount' => $group->sum(function ($trip) {
+                        if (!$trip->truck) {
+                            return 0;
+                        }
+                        return $trip->truck->truck_type === 'L300'
+                            ? 400
+                            : (($trip->destination->rate ?? 0) * 0.8);
+                    }),
+                    'status' => $group->every(fn($trip) => $trip->payment_status === 'Paid')
+                        ? 'PAID'
+                        : 'UNPAID',
+                ];
+            })
+            ->values();
+        // return $helpersPayroll;
         return view('watson.payroll.dashboard', [
             'driversPayroll' => $driversPayroll,
+            'helpersPayroll' => $helpersPayroll,
             'queue' => $queue,
             'total' => $queue->sum('amount'),
             'from' => $from,

@@ -27,10 +27,10 @@
 <body>
 
     {{-- ✅ ALWAYS SHOW SIDEBAR --}}
-    @include('layout.version-2.sidebar')
+    @include('partials.sidebar-watson')
     <main class="main-content">
         {{-- ✅ ALWAYS SHOW NAVBAR --}}
-        @include('partials.navbar')
+        @include('partials.custom-navbar')
         <div class="container-fluid content-inner mt-3 py-0" style="padding-left: 16px;padding-right: 16px;">
             @yield('content')
         </div>

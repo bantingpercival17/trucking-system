@@ -13,31 +13,24 @@ return new class extends Migration {
     {
         Schema::create('watson_trips', function (Blueprint $table) {
             $table->id();
+            // Employee ID (Driver or Helper)
+            $table->unsignedBigInteger('employee_id');
+            // Identify whether the employee is a driver or helper
+            $table->enum('employee_type', ['driver', 'helper']);
+            $table->date('period_start');
+            $table->date('period_end');
+            $table->decimal('gross_amount', 12, 2)->default(0);
+            $table->decimal('allowance', 12, 2)->default(0);
+            $table->decimal('deduction', 12, 2)->default(0);
+            $table->decimal('net_amount', 12, 2)->default(0);
+            $table->enum('status', ['Draft', 'Approved', 'Paid'])
+                ->default('Draft');
+            $table->timestamp('approved_at')->nullable();
+            $table->timestamp('paid_at')->nullable();
 
-            $table->date('dispatch_date');
-
-            $table->foreignId('destination_id')->constrained('watson_destinations')->cascadeOnDelete();
-            $table->foreignId('truck_id')->constrained('trucks')->restrictOnDelete();
-            $table->foreignId('driver_id')->constrained('drivers')->restrictOnDelete();
-
-            $table->unsignedTinyInteger('trip_number')->nullable();
-
-            $table->string('trip_ticket_no')->nullable();
-            $table->string('status')->default('Draft');
-            $table->string('payment_status')->default('Unpaid');
-            $table->string('billing_status')->nullable();
-
-            $table->date('check_release_date')->nullable();
-            $table->string('bank_name')->nullable();
-            $table->string('check_number')->nullable();
-
-            $table->text('remarks')->nullable();
-
-            $table->timestamp('assigned_at')->nullable();
-            $table->timestamp('dispatched_at')->nullable();
-            $table->timestamp('completed_at')->nullable();
-            $table->boolean('is_removed')->default(false);
             $table->timestamps();
+
+            $table->index(['employee_id', 'employee_type']);
         });
     }
 

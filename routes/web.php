@@ -28,12 +28,20 @@ use App\Http\Controllers\Owner\DeductionController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', fn() => view('welcome'));
-
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified', 'role:owner,it,admin,secretary'])
-    ->name('dashboard');
-
+//Route::get('/', fn() => view('welcome'));
+Route::get('/', function () {
+    if (Auth::check()) {
+        return redirect()->route('admin.dashboard');
+    }
+    return view('welcome');
+})->name('home');
+Route::get('/dashboard', function () {
+    return redirect(route('admin.dashboard'));
+})->name('dashboard');
+/* Route::get('/owner/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth',])
+    ->name('owner.dashboard');
+ */
 /*
 |--------------------------------------------------------------------------
 | PROFILE
@@ -58,8 +66,9 @@ Route::middleware(['auth', 'role:owner,it'])
         Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
-       
 
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard')
+            ->middleware(['auth', 'verified', 'role:owner,it,admin,secretary']);
         // 🔴 INCOME REPORTS (RESTRICTED)
         Route::get('/users/reports', [UserController::class, 'reports'])->name('users.reports');
 
@@ -115,7 +124,7 @@ Route::middleware(['auth', 'role:owner,it,admin,secretary'])
     ->group(function () {
         Route::get('/trips', [DispatchTripController::class, 'index'])->name('trips.index');
         Route::post('/trips', [DispatchTripController::class, 'store'])->name('trips.store');
-         Route::delete('/trips/{id}', [DispatchTripController::class, 'destroy'])->name('trips.destroy');
+        Route::delete('/trips/{id}', [DispatchTripController::class, 'destroy'])->name('trips.destroy');
 
         Route::get('/trips/{id}/edit', [DispatchTripController::class, 'edit'])->name('trips.edit');
         Route::put('/trips/{id}', [DispatchTripController::class, 'update'])->name('trips.update');
@@ -228,7 +237,7 @@ Route::get('/switch-layout/{type}', function ($type) {
         return redirect()->route('watson.dashboard');
     }
 
-    return redirect()->route('dashboard');
+    return redirect()->route('owner.dashboard');
 })->name('layout.switch');
 /*
 |--------------------------------------------------------------------------
@@ -352,3 +361,4 @@ Route::middleware(['auth', 'role:owner,it,admin,secretary', 'flash.layout'])
 
 require __DIR__ . '/auth.php';
 require __DIR__ . '/watson-routes.php';
+require __DIR__ . '/version2-routes.php';

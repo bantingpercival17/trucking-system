@@ -1,175 +1,381 @@
 @extends('layouts.watson')
 
-@section('title', 'Watson Payroll')
+@section('title', 'Payroll')
 
 @section('content')
 
-    <div class="container-fluid py-4">
+
+    <div class="max-w-6xl mx-auto px-4 py-4">
 
         <div class="ui-hero p-3 p-lg-4 mb-3 mb-lg-4">
             <div
                 class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+
                 <div>
-                    <h4 class="mb-1">Payroll Dashboard</h4>
+                    <h4 class="mb-1">Payroll</h4>
                     <div class="text-muted small">
-                        Overview before processing payroll
+                        Working payroll preview
+                        <span class="badge bg-light text-primary border ms-2">
+                            {{ $weekStart->format('M d, Y') }} – {{ $weekEnd->format('M d, Y') }}
+                        </span>
                     </div>
                 </div>
 
                 <div class="d-flex gap-2">
 
-                    <a class="btn btn-outline-secondary"
-                        href="{{ route('watson.payroll.index', [
-                            'from' => request('from'),
-                            'to' => request('to'),
-                        ]) }}">
-                        → Payroll
+                    <a class="btn btn-outline-secondary w-full w-sm-auto" href="{{ route('watson.payroll.dashboard') }}">
+                        ← Dashboard
                     </a>
 
-                    <a class="btn btn-outline-secondary" href="{{ route('watson.payroll.history') }}">
+                    <a class="btn btn-outline-secondary w-full w-sm-auto" href="{{ route('watson.payroll.history') }}">
                         → History
                     </a>
 
                 </div>
+
             </div>
         </div>
 
-        {{-- KPI --}}
 
-        <div class="row g-3 mb-4">
 
-            {{-- Trips Ready --}}
-            <div class="col-12 col-md-8 col-lg-4 d-flex">
-                <div class="card ui-card border-0 ui-indicator ui-indicator-primary ui-kpi-card h-80 w-100"
-                    style="margin-bottom: 0px;">
-                    <div class="card-body text-center ui-kpi-body">
-                        <div class="ui-kpi-label">Trips Ready 🚚</div>
-                        <div class="ui-kpi-number text-primary">
-                            {{ $pendingTrips }}
-                        </div>
-                    </div>
-                </div>
+        @if (session('success'))
+            <div class="alert alert-success">{{ session('success') }}</div>
+        @endif
+
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
+        @endif
 
-            {{-- Drivers --}}
-            <div class="col-12 col-md-8 col-lg-4 d-flex">
-                <div class="card ui-card border-0 ui-indicator ui-indicator-success ui-kpi-card h-80 w-100"
-                    style="margin-bottom: 0px;">
-                    <div class="card-body text-center ui-kpi-body">
-                        <div class="ui-kpi-label">Drivers to Pay 👨‍✈️</div>
-                        <div class="ui-kpi-number text-success">
-                            {{ $drivers }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Payroll Total --}}
-            <div class="col-12 col-md-8 col-lg-4 d-flex">
-                <div class="card ui-card border-0 ui-indicator ui-indicator-warning ui-kpi-card h-80 w-100"
-                    style="margin-bottom: 0px;">
-                    <div class="card-body text-center ui-kpi-body">
-                        <div class="ui-kpi-label">Payroll Total 💰</div>
-                        <div class="ui-kpi-number text-warning">
-                            ₱ {{ number_format($total, 2) }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-
-        {{-- QUEUE --}}
-        <div class="card mb-4">
+        <div class="card ui-card border-0 shadow-sm">
             <div class="card-body">
+                {{-- Tabs --}}
+                <ul class="nav nav-pills d-flex flex-column flex-md-row gap-2 mb-3 align-items-start align-items-md-center">
 
-                <div class="queue-header mb-3">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabDrivers" type="button">
 
-                    <div class="queue-title">
-                        <h5 class="mb-1 fw-semibold">Payroll Queue</h5>
-                        <div class="queue-range">
-                            {{ $from->format('M d, Y') }} – {{ $to->format('M d, Y') }}
-                        </div>
-                    </div>
+                            Drivers
+                            <span class="badge bg-light text-dark ms-1">
+                                {{ $driversPayroll->count() }}
+                            </span>
 
-                    <form method="GET" class="queue-filter">
-
-                        <input type="date" name="from" value="{{ request('from') }}"
-                            class="form-control form-control-sm">
-
-                        <input type="date" name="to" value="{{ request('to') }}"
-                            class="form-control form-control-sm">
-
-                        <button class="btn btn-sm btn-primary">
-                            Apply
                         </button>
+                    </li>
 
+
+                    <form method="POST" action="{{ route('watson.payroll.finalize') }}"
+                        class="d-flex w-full w-md-auto justify-content-start mt-2 mt-md-0">
+                        @csrf
+
+                        <input type="hidden" name="week_start" value="{{ $weekStart->toDateString() }}">
+                        <input type="hidden" name="week_end" value="{{ $weekEnd->toDateString() }}">
+
+                        <button class="btn btn-primary w-full w-md-auto">
+                            Finalize Payroll Week
+                        </button>
                     </form>
 
+                </ul>
+
+                {{-- DRIVERS --}}
+                <div class="tab-pane fade show active" id="tabDrivers">
+                    @forelse($driversPayroll as $p)
+                        @php
+                            $status = $p['status'] ?? 'UNPAID';
+                            $badge = match ($status) {
+                                'PAID' => 'success',
+                                'PARTIAL' => 'warning',
+                                'OVERPAID' => 'info',
+                                'NO TRIPS' => 'secondary',
+                                default => 'danger',
+                            };
+                        @endphp
+
+                        <form>
+                            @csrf
+
+                            <input type="hidden" name="from" value="{{ $from }}">
+                            <input type="hidden" name="to" value="{{ $to }}">
+                            <input type="hidden" name="active_tab" class="active-tab-input" value="tabDrivers">
+                            <input type="hidden" name="person_type" value="driver">
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-body p-0">
+
+                                    <div
+                                        class="p-3 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                                        <div>
+                                            <div class="fw-bold text-info">{{ $p['name'] }} <span
+                                                    class="text-muted small ms-1">Driver</span></div>
+                                        </div>
+
+                                        <div class="d-flex justify-content-end align-items-center gap-2">
+
+                                            <span class="badge bg-{{ $badge }}">{{ $status }}</span>
+
+                                            @if ($status !== 'PAID')
+                                                <button type="button" class="btn btn-sm btn-success pay-btn"
+                                                    data-bs-toggle="modal" data-bs-target="#payModal"
+                                                    data-person-id="{{ $p['person_id'] }}" data-person-type="driver"
+                                                    data-name="{{ $p['name'] }}" data-trips="{{ count($p['rows']) }}"
+                                                    data-amount="{{ $p['payroll_total'] }}"
+                                                    data-balance-advance="{{ $p['latest_balance_advance'] ?? 0 }}">
+                                                    Pay
+                                                </button>
+                                            @endif
+
+                                        </div>
+                                    </div>
+
+                                    <div class="overflow-x-auto">
+                                        <table class="table table-bordered payroll-table mb-0 w-full">
+                                            <thead>
+                                                <tr class="text-center">
+                                                    <th class="whitespace-nowrap">DATE</th>
+                                                    <th class="break-words">DESTINATION</th>
+                                                     <th class="vertical">TRIPS</th>
+                                                    <th class="vertical">RATE</th>
+                                                    <th class="vertical">AMOUNT</th>
+                                                    <th class="vertical">TOTALS</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                                @foreach ($p['rows'] as $r)
+                                                    <tr>
+                                                        <td class="text-center" data-label="Date">{{ $r['date'] }}
+                                                        </td>
+                                                        <td class="break-words" data-label="Destination">
+                                                            {{ $r['destination'] }}</td>
+
+                                                        <td>{{ $r['trip_number'] }}</td>
+
+                                                        <td>{{ number_format($r['rate'], 2) }}</td>
+
+                                                        <td>
+                                                            <input type="number" step="0.01"
+                                                                name="rows[{{ $r['id'] }}][amount]"
+                                                                value="{{ $r['amount'] }}"
+                                                                class="form-control form-control-sm payroll-edit-input"
+                                                                readonly>
+                                                        </td>
+
+                                                        <td class="text-end fw-bold" data-label="Totals">
+                                                            {{ number_format($r['total_salary'], 2) }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="5" class="text-end">TOTAL</th>
+                                                    <th class="text-end">
+                                                        ₱ {{ number_format($p['payroll_total'], 2) }}
+                                                    </th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    @empty
+                        <div class="alert alert-light border">No driver payroll rows found.</div>
+                    @endforelse
                 </div>
 
+            </div>
+        </div>
+    </div>
 
 
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Driver</th>
-                            <th>Trips</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
+    <!-- ✅ SINGLE GLOBAL MODAL ONLY -->
+    <div class="modal fade" id="payModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
 
-                    <tbody>
-                        @foreach ($queue as $q)
-                            <tr>
-                                <td>{{ $q['name'] }}</td>
-                                <td>{{ $q['trips'] }}</td>
-                                <td>₱ {{ number_format($q['amount'], 2) }}</td>
-                                <td>
-                                    <span
-                                        class="badge 
-                                        {{ $q['status'] === 'Unpaid' ? 'bg-danger' : 'bg-success' }}">
-                                        {{ $q['status'] }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-  <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Helper</th>
-                            <th>Trips</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
+                <form method="POST" action="{{ route('watson.payroll.pay') }}">
+                    @csrf
+                    <div class="modal-header">
+                        <h6 class="modal-title">Payroll Payment</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- HIDDEN -->
+                        <input type="hidden" name="person_type" id="modalPersonType">
+                        <input type="hidden" name="person_id" id="modalPersonId">
+                        <input type="hidden" name="total_trips" id="modalTrips">
+                        <input type="hidden" name="amount" id="modalAmount">
 
-                    <tbody>
-                        @foreach ($queue as $q)
-                            <tr>
-                                <td>{{ $q['name'] }}</td>
-                                <td>{{ $q['trips'] }}</td>
-                                <td>₱ {{ number_format($q['amount'], 2) }}</td>
-                                <td>
-                                    <span
-                                        class="badge 
-                                        {{ $q['status'] === 'Unpaid' ? 'bg-danger' : 'bg-success' }}">
-                                        {{ $q['status'] }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+
+                        <input type="hidden" name="week_start" value="{{ $weekStart->toDateString() }}">
+                        <input type="hidden" name="week_end" value="{{ $weekEnd->toDateString() }}">
+
+                        <!-- DISPLAY -->
+                        <div class="mb-2">
+                            <label class="form-label">Name</label>
+                            <input class="form-control" id="modalName" readonly>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label">Total Trips</label>
+                            <input class="form-control" id="modalTripsDisplay" readonly>
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label">Total Amount</label>
+                            <input class="form-control" id="modalAmountDisplay" readonly>
+                        </div>
+
+                        <!-- INPUTS (ETO ANG FIXED PART MO) -->
+
+                        <div class="mb-2">
+                            <label class="form-label">Advance Balance</label>
+                            <input type="number" step="0.01" name="balance_advance" class="form-control"
+                                value="0">
+                        </div>
+
+                        <div class="mb-2">
+                            <label class="form-label">Advance Deduction</label>
+                            <input type="number" step="0.01" name="advance_deducted" class="form-control"
+                                value="0">
+                        </div>
+
+                        <!-- PAYMENT -->
+                        <div class="mb-2">
+                            <label class="form-label">Payment Method</label>
+                            <select name="payment_mode" class="form-select payment-method">
+                                <option value="cash">Cash</option>
+                                <option value="gcash">GCash</option>
+                                <option value="bank">Bank</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-2 transaction-field d-none">
+                            <label class="form-label">Transaction ID</label>
+                            <input type="text" name="transaction_id" class="form-control">
+                        </div>
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-success">
+                            Confirm Payment
+                        </button>
+                    </div>
+
+                </form>
+
             </div>
         </div>
     </div>
 
 @endsection
+
+
+@push('scripts')
+    <script>
+        document.addEventListener('click', function(e) {
+
+            if (e.target.classList.contains('pay-btn')) {
+
+                const btn = e.target;
+
+                document.getElementById('modalPersonType').value = btn.dataset.personType;
+                document.getElementById('modalPersonId').value = btn.dataset.personId;
+                document.getElementById('modalTrips').value = btn.dataset.trips;
+                document.getElementById('modalAmount').value = btn.dataset.amount;
+
+                document.getElementById('modalName').value = btn.dataset.name;
+                document.getElementById('modalTripsDisplay').value = btn.dataset.trips;
+                document.getElementById('modalAmountDisplay').value = '₱ ' + Number(btn.dataset.amount)
+                    .toLocaleString();
+
+                document.querySelector('input[name="balance_advance"]').value =
+                    btn.dataset.balanceAdvance || 0;
+
+            }
+
+        });
+
+        document.addEventListener('change', function(e) {
+
+            if (e.target.classList.contains('payment-method')) {
+
+                const method = e.target.value;
+                const modal = e.target.closest('.modal');
+
+
+                const transactionField = modal.querySelector('.transaction-field');
+
+                if (method === 'gcash' || method === 'bank') {
+                    transactionField.classList.remove('d-none');
+                } else {
+                    transactionField.classList.add('d-none');
+                }
+
+            }
+
+        });
+
+        document.addEventListener('click', function(e) {
+
+            if (e.target.classList.contains('edit-payroll-btn')) {
+
+                const form = e.target.closest('form');
+
+                form.querySelectorAll('.payroll-edit-input').forEach(input => {
+                    input.removeAttribute('readonly');
+                });
+
+                form.querySelector('.save-payroll-btn').classList.remove('d-none');
+
+                e.target.classList.add('d-none');
+            }
+
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+
+            const activeTab = new URLSearchParams(window.location.search).get('active_tab');
+
+            if (activeTab) {
+                const trigger = document.querySelector(`[data-bs-target="#${activeTab}"]`);
+
+                if (trigger) {
+                    new bootstrap.Tab(trigger).show();
+                }
+            }
+
+        });
+
+        document.addEventListener('click', function(e) {
+
+            if (e.target.classList.contains('save-payroll-btn')) {
+
+                const activeTabBtn = document.querySelector('.nav-link.active');
+
+                const activeTab = activeTabBtn?.getAttribute('data-bs-target')?.replace('#', '');
+
+                const form = e.target.closest('form');
+
+                if (activeTab) {
+                    form.querySelector('.active-tab-input').value = activeTab;
+                }
+            }
+
+        });
+    </script>
+@endpush
 
 @push('styles')
     <style>
@@ -808,15 +1014,10 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            align-items: center;
         }
 
         .queue-filter input {
-            width: 120px;
-        }
-
-        .queue-filter button {
-            white-space: nowrap;
+            max-width: 140px;
         }
 
         /* MOBILE QUEUE CARDS */
@@ -905,27 +1106,19 @@
 
 
             .queue-filter {
-                display: flex;
-                gap: 8px;
-                flex-wrap: wrap;
-                align-items: center;
                 flex-direction: column;
                 width: 100%;
             }
 
             .queue-filter input {
-                width: 120px;
+                width: 100%;
+                max-width: none;
             }
 
-            .queue-filter button {
-                white-space: nowrap;
-            }
-
-
-            .queue-filter input,
             .queue-filter button {
                 width: 100%;
             }
+
 
             .queue-range {
                 font-size: 13px;
@@ -935,47 +1128,99 @@
             }
 
         }
-    </style>
-@endpush
 
-@push('scripts')
-    <script>
-        document.getElementById('addRowBtn').addEventListener('click', function() {
+        .nav-pills .nav-link {
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-weight: 600;
+        }
 
-            const table = document.getElementById('allowanceTable');
+        .payroll-table {
+            width: 100%;
+            table-layout: fixed;
+        }
 
-            const row = `
-        <tr>
-            <td>
-                <input type="number" name="rate_from[]" class="form-control form-control-sm">
-            </td>
+        .payroll-table th,
+        .payroll-table td {
+            word-break: break-word;
+            white-space: normal !important;
+            padding: .35rem .4rem;
+            font-size: .82rem;
+        }
 
-            <td>
-                <input type="number" name="rate_to[]" class="form-control form-control-sm">
-            </td>
+        .payroll-table th.whitespace-nowrap,
+        .payroll-table td.whitespace-nowrap,
+        .payroll-table .text-end.whitespace-nowrap {
+            white-space: nowrap !important;
+        }
 
-            <td>
-                <input type="number" name="allowance[]" class="form-control form-control-sm">
-            </td>
+        .payroll-table th:nth-child(2),
+        .payroll-table td:nth-child(2) {
+            min-width: 120px;
+        }
 
-            <td>
-                <button type="button" class="btn btn-sm btn-outline-danger removeRow">
-                    Delete
-                </button>
-            </td>
-        </tr>
-    `;
+        .payroll-table th:nth-child(6),
+        .payroll-table td:nth-child(6) {
+            min-width: 90px;
+        }
 
-            table.insertAdjacentHTML('beforeend', row);
+        .pay-status-row {
+            min-height: 38px;
+        }
 
-        });
+        .pay-status-row .badge {
+            flex-shrink: 0;
+        }
 
-        document.addEventListener('click', function(e) {
+        .pay-status-row .pay-btn {
+            flex-shrink: 0;
+            width: 100%;
+            max-width: 140px;
+        }
 
-            if (e.target.classList.contains('removeRow')) {
-                e.target.closest('tr').remove();
+        @media (max-width: 768px) {
+            .pay-status-row {
+                flex-direction: column;
+                align-items: stretch;
+                gap: .45rem;
             }
 
-        });
-    </script>
+            .pay-status-row .pay-btn {
+                max-width: 100%;
+            }
+
+            .payroll-table thead {
+                display: none;
+            }
+
+            .payroll-table,
+            .payroll-table tbody,
+            .payroll-table tr,
+            .payroll-table td {
+                display: block;
+                width: 100%;
+            }
+
+            .payroll-table tr {
+                margin-bottom: 1rem;
+            }
+
+            .payroll-table td {
+                text-align: right;
+                padding-left: 50%;
+                position: relative;
+            }
+
+            .payroll-table td::before {
+                position: absolute;
+                left: 0;
+                width: 45%;
+                padding-left: 0.5rem;
+                white-space: nowrap;
+                font-weight: 700;
+                content: attr(data-label);
+                text-align: left;
+            }
+        }
+    </style>
 @endpush

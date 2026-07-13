@@ -1,15 +1,8 @@
-@php
-    $layout = session('layout', 'owner');
-    $isFlash = $layout === 'flash';
-
-    $dashboardRoute = $isFlash ? 'flash.dashboard' : 'owner.dashboard';
-@endphp
-
 <nav class="nav navbar navbar-expand-lg navbar-light iq-navbar py-lg-0">
     <div class="container-fluid navbar-inner">
 
         {{-- Brand --}}
-        <a href="{{ route($dashboardRoute) }}" class="navbar-brand">
+        <a href="{{ route('admin.dashboard', 'all') }}" class="navbar-brand">
             <svg width="80" height="26" viewBox="0 0 80 26" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path
                     d="M17.4453 8.66406H21.875C21.1367 3.95312 17.0586 0.671874 11.75 0.671874C5.46875 0.671874 0.757813 5.28906 0.757813 13.0234C0.757813 20.6172 5.25781 25.3281 11.8789 25.3281C17.8203 25.3281 22.0742 21.5078 22.0742 15.3203V12.4375H12.3359V15.8359H17.8672C17.7969 19.2578 15.5117 21.4258 11.9023 21.4258C7.88281 21.4258 5.12891 18.4141 5.12891 12.9766C5.12891 7.57422 7.92969 4.57422 11.8086 4.57422C14.7031 4.57422 16.6719 6.12109 17.4453 8.66406Z"
@@ -32,37 +25,69 @@
             data-bs-target="#navbarSupportedContent">
             <span class="navbar-toggler-icon"></span>
         </button>
-
+        <li class="nav-item ">
+            <a class="nav-link ">
+                <span class="text-primary fw-bolder h4">
+                    @yield('sub-title')
+                </span>
+            </a>
+        </li>
         {{-- Menu --}}
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav ms-auto align-items-center">
 
-                @php
-                    $layout = session('layout', 'default');
-                    $label = match ($layout) {
-                        'flash' => 'Flash',
-                        'watson' => 'Watson',
-                        default => 'Chamonix',
-                    };
-                @endphp
-
-                <li class="nav-item dropdown">
+                <li class="nav-item dropdown p-4">
                     <a class="nav-link dropdown-toggle" href="#" id="layoutDropdown" role="button"
                         data-bs-toggle="dropdown">
-                        Layout: {{ $label }}
+                        Company:
+                        <span class="text-primary fw-bolder h4">
+                            {{ request()->route('company') ? ucwords(request()->route('company')) : 'Select Company' }}
+                        </span>
                     </a>
 
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li>
-                            <a class="dropdown-item" href="{{ route('layout.switch', 'default') }}">
-                                Chamonix
+                            @php
+                                $company = strtolower('all');
+                                $routeName = request()->route()->getName();
+
+                                $url = Str::contains($routeName, ['.destinations.', '.dispatch.', '.payrolls.'])
+                                    ? route(
+                                        $routeName,
+                                        array_merge(request()->route()->parameters(), ['company' => $company]),
+                                    )
+                                    : route('company.dashboard', ['company' => $company]);
+                            @endphp
+                            <a class="dropdown-item" href="{{ $url }}">
+                                All Company
                             </a>
                         </li>
+                        @foreach (Auth::user()->companies() as $item)
+                            @php
+                                $company = strtolower($item->name);
+                                $routeName = request()->route()->getName();
+
+                                $url = Str::contains($routeName, ['.destinations.', '.dispatch.', '.payrolls.'])
+                                    ? route(
+                                        $routeName,
+                                        array_merge(request()->route()->parameters(), ['company' => $company]),
+                                    )
+                                    : route('company.dashboard', ['company' => $company]);
+                            @endphp
+                            <li>
+                                <a class="dropdown-item" href="{{ $url }}">
+                                    {{ $item->name }}
+                                </a>
+                            </li>
+                        @endforeach
                         <li>
-                            <a class="dropdown-item" href="{{ route('layout.switch', 'flash') }}">
-                                Flash
+                            <hr>
+                            <a class="dropdown-item" href="{{ route('owner.dashboard') }}">
+                                OLD VERSION
                             </a>
+
                         </li>
+
                     </ul>
                 </li>
 

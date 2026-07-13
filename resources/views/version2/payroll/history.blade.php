@@ -1,95 +1,104 @@
 @extends('layouts.watson')
 
-@section('title', 'Watson Payroll')
+@section('title', 'Payroll History')
 
 @section('content')
-
-    <div class="container-fluid py-4">
+    <div class="max-w-6xl mx-auto px-4 py-4">
 
         <div class="ui-hero p-3 p-lg-4 mb-3 mb-lg-4">
+
             <div
                 class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+
                 <div>
-                    <h4 class="mb-1">Payroll Dashboard</h4>
+                    <h4 class="mb-1">Payroll History</h4>
                     <div class="text-muted small">
-                        Overview before processing payroll
+                        Archived payroll weeks (Processed & Paid)
                     </div>
                 </div>
 
                 <div class="d-flex gap-2">
-
-                    <a class="btn btn-outline-secondary"
-                        href="{{ route('watson.payroll.index', [
-                            'from' => request('from'),
-                            'to' => request('to'),
-                        ]) }}">
-                        → Payroll
+                    <a href="{{ route('watson.payroll.dashboard') }}" class="btn btn-outline-secondary">
+                        ← Dashboard
                     </a>
 
-                    <a class="btn btn-outline-secondary" href="{{ route('watson.payroll.history') }}">
-                        → History
+                    <a href="{{ route('watson.payroll.index') }}" class="btn btn-outline-secondary">
+                        ← Payroll
                     </a>
-
                 </div>
-            </div>
-        </div>
 
-        {{-- KPI --}}
-
-        <div class="row g-3 mb-4">
-
-            {{-- Trips Ready --}}
-            <div class="col-12 col-md-8 col-lg-4 d-flex">
-                <div class="card ui-card border-0 ui-indicator ui-indicator-primary ui-kpi-card h-80 w-100"
-                    style="margin-bottom: 0px;">
-                    <div class="card-body text-center ui-kpi-body">
-                        <div class="ui-kpi-label">Trips Ready 🚚</div>
-                        <div class="ui-kpi-number text-primary">
-                            {{ $pendingTrips }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Drivers --}}
-            <div class="col-12 col-md-8 col-lg-4 d-flex">
-                <div class="card ui-card border-0 ui-indicator ui-indicator-success ui-kpi-card h-80 w-100"
-                    style="margin-bottom: 0px;">
-                    <div class="card-body text-center ui-kpi-body">
-                        <div class="ui-kpi-label">Drivers to Pay 👨‍✈️</div>
-                        <div class="ui-kpi-number text-success">
-                            {{ $drivers }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Payroll Total --}}
-            <div class="col-12 col-md-8 col-lg-4 d-flex">
-                <div class="card ui-card border-0 ui-indicator ui-indicator-warning ui-kpi-card h-80 w-100"
-                    style="margin-bottom: 0px;">
-                    <div class="card-body text-center ui-kpi-body">
-                        <div class="ui-kpi-label">Payroll Total 💰</div>
-                        <div class="ui-kpi-number text-warning">
-                            ₱ {{ number_format($total, 2) }}
-                        </div>
-                    </div>
-                </div>
             </div>
 
         </div>
 
+        @php
+            $driversTotal = collect($weeks)->sum('driversTotal');
+            $grandTotal = collect($weeks)->sum('grandTotal');
 
-        {{-- QUEUE --}}
-        <div class="card mb-4">
-            <div class="card-body">
+            $driversCount = collect($weeks)->flatMap(fn($w) => $w['driversPayroll'])->unique('person_id')->count();
+        @endphp
 
-                <div class="queue-header mb-3">
 
-                    <div class="queue-title">
-                        <h5 class="mb-1 fw-semibold">Payroll Queue</h5>
-                        <div class="queue-range">
-                            {{ $from->format('M d, Y') }} – {{ $to->format('M d, Y') }}
+        {{-- KPI CARDS --}}
+        <div class="row">
+
+            <div class="col-12 col-md-6">
+                <div class="card ui-card border-0 shadow-sm">
+                    <div class="card-body text-center">
+
+                        <div class="text-muted small mb-1">
+                            Drivers Payroll
+                        </div>
+
+                        <div class="fw-bold fs-5 text-success">
+                            ₱ {{ number_format($driversTotal, 2) }}
+                        </div>
+
+                        <div class="small text-muted">
+                            {{ $driversCount }} Drivers
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="card ui-card border-0 shadow-sm">
+                    <div class="card-body text-center">
+
+                        <div class="text-muted small mb-1">
+                            Weekly Total
+                        </div>
+
+                        <div class="fw-bold fs-5 text-warning">
+                            ₱ {{ number_format($grandTotal, 2) }}
+                        </div>
+
+                        <div class="small text-muted">
+                            {{ count($weeks) }} Payroll Weeks
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+
+        {{-- PAYROLL WEEKS --}}
+        <div class="card border-0 shadow-sm mb-3">
+
+            <div class="card-header bg-white">
+
+                <div class="queue-header">
+
+                    <div>
+                        <div class="fw-bold fs-4 text-dark">
+                            Payroll Week
+                        </div>
+
+                        <div class="text-muted small">
+                            Select payroll week range
                         </div>
                     </div>
 
@@ -109,70 +118,280 @@
 
                 </div>
 
-
-
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Driver</th>
-                            <th>Trips</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        @foreach ($queue as $q)
-                            <tr>
-                                <td>{{ $q['name'] }}</td>
-                                <td>{{ $q['trips'] }}</td>
-                                <td>₱ {{ number_format($q['amount'], 2) }}</td>
-                                <td>
-                                    <span
-                                        class="badge 
-                                        {{ $q['status'] === 'Unpaid' ? 'bg-danger' : 'bg-success' }}">
-                                        {{ $q['status'] }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-  <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Helper</th>
-                            <th>Trips</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-
-                    <tbody>
-                        @foreach ($queue as $q)
-                            <tr>
-                                <td>{{ $q['name'] }}</td>
-                                <td>{{ $q['trips'] }}</td>
-                                <td>₱ {{ number_format($q['amount'], 2) }}</td>
-                                <td>
-                                    <span
-                                        class="badge 
-                                        {{ $q['status'] === 'Unpaid' ? 'bg-danger' : 'bg-success' }}">
-                                        {{ $q['status'] }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
             </div>
-        </div>
-    </div>
 
+
+            <div class="card-body">
+
+                @forelse($weeks as $wIndex => $w)
+
+                    {{-- WEEK TITLE --}}
+                    <div class="fw-bold fs-5 mb-3 text-primary">
+                        {{ \Carbon\Carbon::parse($w['week_start'])->format('M d') }} –
+                        {{ \Carbon\Carbon::parse($w['week_end'])->format('M d, Y') }}
+                    </div>
+
+
+                    {{-- TABS --}}
+                    <ul
+                        class="nav nav-pills d-flex flex-column flex-md-row gap-2 mb-3 align-items-start align-items-md-center">
+
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab"
+                                data-bs-target="#week{{ $wIndex }}Drivers" type="button">
+
+                                Drivers
+                                <span class="badge bg-light text-dark ms-1">
+                                    {{ count($w['driversPayroll']) }}
+                                </span>
+
+                            </button>
+                        </li>
+
+                    </ul>
+
+
+                    <div class="tab-content">
+
+                        {{-- DRIVERS --}}
+                        <div class="tab-pane fade show active" id="week{{ $wIndex }}Drivers">
+
+                            @forelse($w['driversPayroll'] as $p)
+                                @php
+                                    $status = $p['status'] ?? 'UNPAID';
+
+                                    $badge = match ($status) {
+                                        'PAID' => 'success',
+                                        'PARTIAL' => 'warning',
+                                        'OVERPAID' => 'info',
+                                        'NO TRIPS' => 'secondary',
+                                        default => 'danger',
+                                    };
+                                @endphp
+
+
+                                <div class="card border mb-3">
+
+                                    <div class="card-body p-0">
+
+                                        <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+
+                                            <!-- LEFT -->
+                                            <div class="fw-bold text-info">
+                                                {{ $p['name'] ?? 'Unknown Driver' }}
+                                                <span class="text-muted small ms-1">Driver</span>
+                                            </div>
+
+                                            <!-- RIGHT -->
+                                            <div class="d-flex align-items-center gap-2">
+
+                                                <span class="badge bg-{{ $badge }}">
+                                                    {{ $status }}
+                                                </span>
+
+                                                <a href="{{ route('watson.payroll.pdf', $p['payment_id']) }}"
+                                                    class="btn btn-sm btn-danger">
+                                                    PDF
+                                                </a>
+
+                                                <form method="POST"
+                                                    action="{{ route('watson.payroll.delete', $p['payment_id']) }}"
+                                                    onsubmit="return confirm('Delete this payroll payment?');">
+                                                    @csrf
+                                                    @method('DELETE')
+
+                                                    <button class="btn btn-sm btn-outline-danger">
+                                                        Delete
+                                                    </button>
+                                                </form>
+                                            </div>
+
+                                        </div>
+
+
+                                        <div class="overflow-x-auto">
+                                            <table class="table table-bordered payroll-table-history mb-0 w-full">
+
+                                                <thead class="table-light">
+
+                                                    <tr class="text-center">
+                                                        <th>DATE</th>
+                                                        <th>DESTINATION</th>
+                                                        <th>RATE</th>
+                                                        <th>AMOUNT</th>
+                                                        <th>TOTALS</th>
+                                                        <th></th>
+                                                    </tr>
+
+                                                </thead>
+
+
+                                                <tbody>
+
+                                                    @forelse($p['rows'] as $r)
+                                                        <tr>
+
+                                                            <td class="text-center" data-label="Date">{{ $r['date'] }}
+                                                            </td>
+                                                            <td class="break-words" data-label="Destination">
+                                                                {{ $r['location'] }}</td>
+
+                                                            <td class="text-end whitespace-nowrap" data-label="Rate">
+                                                                {{ number_format($r['rate'], 2) }}</td>
+
+                                                            <td class="text-end whitespace-nowrap" data-label="Amount">
+                                                                {{ number_format($r['amount'], 2) }}</td>
+
+                                                            <td class="text-end fw-bold" data-label="Totals">
+                                                                {{ number_format($r['total_salary'], 2) }}
+                                                            </td>
+
+                                                        </tr>
+
+                                                    @empty
+
+                                                        <tr>
+                                                            <td colspan="4" class="text-center text-muted py-4">
+                                                                No trips.
+                                                            </td>
+                                                        </tr>
+                                                    @endforelse
+
+                                                </tbody>
+
+
+                                                <tfoot class="table-light">
+                                                    <tr class="text-center fw-semibold">
+                                                        <th colspan="1"></th>
+
+                                                        <th>
+                                                            <small class="d-block text-muted">TOTAL</small>
+                                                            ₱ {{ number_format($p['payroll_total'], 2) }}
+                                                        </th>
+
+                                                        <th>
+                                                            <small class="d-block text-muted">LAST BALANCE</small>
+                                                            ₱ {{ number_format($p['advance_amount'] ?? 0, 2) }}
+                                                        </th>
+
+                                                        <th>
+                                                            <small class="d-block text-danger">ADV. DEDUCTED</small>
+                                                            ₱ {{ number_format($p['advance'] ?? 0, 2) }}
+                                                        </th>
+
+                                                        <th>
+                                                            <small class="d-block text-primary">BALANCE ADV.</small>
+                                                            ₱ {{ number_format($p['balance_advance_remaining'] ?? 0, 2) }}
+                                                        </th>
+
+                                                        <th>
+                                                            <small class="d-block text-info">NET PAY</small>
+                                                            ₱ {{ number_format($p['net_pay'], 2) }}
+                                                        </th>
+                                                    </tr>
+                                                </tfoot>
+
+                                            </table>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            @empty
+
+                                <div class="alert alert-light border">
+                                    No drivers this week.
+                                </div>
+                            @endforelse
+
+                        </div>
+
+                    </div>
+
+                    <hr class="my-4">
+
+                @empty
+
+                    <div class="alert alert-light border">
+                        No processed weeks found in this range.
+                    </div>
+
+                @endforelse
+
+            </div>
+
+        </div>
+
+    </div>
 @endsection
 
 @push('styles')
     <style>
+        .payroll-table-history {
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        .payroll-table-history th,
+        .payroll-table-history td {
+            word-break: break-word;
+            white-space: normal !important;
+            padding: .35rem .4rem;
+            font-size: .82rem;
+        }
+
+        .payroll-table-history th.whitespace-nowrap,
+        .payroll-table-history td.whitespace-nowrap,
+        .payroll-table-history .text-end.whitespace-nowrap {
+            white-space: nowrap !important;
+        }
+
+        .payroll-table-history th:nth-child(2),
+        .payroll-table-history td:nth-child(2) {
+            min-width: 120px;
+        }
+
+        .payroll-table-history th:nth-child(6),
+        .payroll-table-history td:nth-child(6) {
+            min-width: 90px;
+        }
+
+        @media (max-width: 768px) {
+            .payroll-table-history thead {
+                display: none;
+            }
+
+            .payroll-table-history,
+            .payroll-table-history tbody,
+            .payroll-table-history tr,
+            .payroll-table-history td {
+                display: block;
+                width: 100%;
+            }
+
+            .payroll-table-history tr {
+                margin-bottom: 1rem;
+            }
+
+            .payroll-table-history td {
+                text-align: right;
+                padding-left: 50%;
+                position: relative;
+            }
+
+            .payroll-table-history td::before {
+                position: absolute;
+                left: 0;
+                width: 45%;
+                padding-left: 0.5rem;
+                white-space: nowrap;
+                font-weight: 700;
+                content: attr(data-label);
+                text-align: left;
+            }
+        }
+
         /* ===== Shipments-like UI ===== */
         .ui-card {
             border-radius: 18px;
@@ -808,15 +1027,10 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
-            align-items: center;
         }
 
         .queue-filter input {
-            width: 120px;
-        }
-
-        .queue-filter button {
-            white-space: nowrap;
+            max-width: 140px;
         }
 
         /* MOBILE QUEUE CARDS */
@@ -905,27 +1119,19 @@
 
 
             .queue-filter {
-                display: flex;
-                gap: 8px;
-                flex-wrap: wrap;
-                align-items: center;
                 flex-direction: column;
                 width: 100%;
             }
 
             .queue-filter input {
-                width: 120px;
+                width: 100%;
+                max-width: none;
             }
 
-            .queue-filter button {
-                white-space: nowrap;
-            }
-
-
-            .queue-filter input,
             .queue-filter button {
                 width: 100%;
             }
+
 
             .queue-range {
                 font-size: 13px;
@@ -940,40 +1146,22 @@
 
 @push('scripts')
     <script>
-        document.getElementById('addRowBtn').addEventListener('click', function() {
+        document.addEventListener('submit', function(e) {
 
-            const table = document.getElementById('allowanceTable');
+            const form = e.target;
 
-            const row = `
-        <tr>
-            <td>
-                <input type="number" name="rate_from[]" class="form-control form-control-sm">
-            </td>
+            if (form.querySelector('.active-tab-input')) {
 
-            <td>
-                <input type="number" name="rate_to[]" class="form-control form-control-sm">
-            </td>
+                const activeTabBtn = form.closest('.card-body')
+                    ?.querySelector('.nav-link.active');
 
-            <td>
-                <input type="number" name="allowance[]" class="form-control form-control-sm">
-            </td>
+                const activeTab = activeTabBtn
+                    ?.getAttribute('data-bs-target')
+                    ?.replace('#', '');
 
-            <td>
-                <button type="button" class="btn btn-sm btn-outline-danger removeRow">
-                    Delete
-                </button>
-            </td>
-        </tr>
-    `;
-
-            table.insertAdjacentHTML('beforeend', row);
-
-        });
-
-        document.addEventListener('click', function(e) {
-
-            if (e.target.classList.contains('removeRow')) {
-                e.target.closest('tr').remove();
+                if (activeTab) {
+                    form.querySelector('.active-tab-input').value = activeTab;
+                }
             }
 
         });

@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\TruckDestination;
 use App\Models\WatsonDestination;
 use Illuminate\Database\Seeder;
 
@@ -190,7 +191,16 @@ class WatsonDestinationSeeder extends Seeder
         ];
 
         foreach ($rows as $row) {
-            WatsonDestination::updateOrCreate(
+            TruckDestination::firstOrCreate([
+                'company_id' => 3,
+                'destination_code' => $row['origin'],
+                'area' => $row['destination_name'] . ' | ' . $row['area'],
+            ], [
+                'store_name' => null,
+                'truck_type' => $row['truck_type'],
+                'rate' => $row['rate'],
+            ]);
+            /*   WatsonDestination::updateOrCreate(
                 [
                     'origin' => $row['origin'],
                     'destination_name' => $row['destination_name'],
@@ -200,7 +210,7 @@ class WatsonDestinationSeeder extends Seeder
                     'area' => $row['area'],
                     'rate' => $row['rate'],
                 ]
-            );
+            ); */
         }
     }
 }

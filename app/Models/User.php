@@ -43,4 +43,9 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    function companies()
+    {
+        return Company::where('is_active', true)->get();
+    }
 }

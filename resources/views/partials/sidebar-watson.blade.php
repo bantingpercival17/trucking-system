@@ -15,12 +15,13 @@
         str_contains(request()->route()->getName(), 'watson.trucks') ||
         str_contains(request()->route()->getName(), 'watson.drivers') ||
         str_contains(request()->route()->getName(), 'watson.destinations');
+    $session = session('company') ?: 'all';
 
 @endphp
 
 <aside class="sidebar sidebar-default navs-rounded-all">
     <div class="sidebar-header d-flex align-items-center justify-content-center">
-        <a href="{{ route('dashboard') }}" class="navbar-brand d-flex flex-column">
+        <a href="{{ route('company.dashboard', ['company' => $session]) }}" class="navbar-brand d-flex flex-column">
             <span class="fw-bold">{{ $first }}</span>
             <span class="small text-muted">WATSON</span>
         </a>
@@ -53,8 +54,8 @@
 
                 <!-- Dashboard (single link) -->
                 <li class="nav-item">
-                    <a class="nav-link {{ request()->routeIs('watson.dashboard') ? 'active' : '' }}"
-                        href="{{ route('watson.dashboard') }}">
+                    <a class="nav-link {{ request()->routeIs('company.dashboard') ? 'active' : '' }}"
+                        href="{{ route('company.dashboard', ['company' => $session]) }}">
                         <i class="icon">
                             <svg width="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path opacity="0.4"
@@ -105,8 +106,8 @@
                         <ul class="sub-nav collapse {{ $operationsOpen ? 'show' : '' }}" id="sidebar-operations">
 
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('watson.trips.*') ? 'active' : '' }}"
-                                    href="{{ route('watson.trips.index') }}">
+                                <a class="nav-link {{ request()->routeIs('company.dispatch.*') ? 'active' : '' }}"
+                                    href="{{ route('company.dispatch.index', ['company' => strtolower($session)]) }}">
                                     <i class="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24"
                                             fill="currentColor">
@@ -148,8 +149,8 @@
 
 
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('watson.destinations.*') ? 'active' : '' }}"
-                                    href="{{ route('watson.destinations.index') }}">
+                                <a class="nav-link {{ request()->routeIs('company.destinations.*') ? 'active' : '' }}"
+                                    href="{{ route('company.destinations.index', ['company' => strtolower($session)]) }}">
                                     <i class="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24"
                                             fill="currentColor">
@@ -164,6 +165,8 @@
                         </ul>
                     </li>
                 @endif
+
+
                 <li>
                     <hr class="hr-horizontal">
                 </li>
@@ -194,8 +197,8 @@
 
                         <ul class="sub-nav collapse" id="sidebar-finance" data-bs-parent="#sidebar-menu">
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('watson.payroll.billing') ? 'active' : '' }}"
-                                    href="{{ route('watson.payroll.billing') }}">
+                                <a class="nav-link {{ request()->routeIs('owner.payroll.billing') ? 'active' : '' }}"
+                                    href="{{ route('owner.payroll.billing') }}">
                                     <i class="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24"
                                             fill="currentColor">
@@ -208,8 +211,8 @@
                             </li>
                             @if (hasRole(['owner', 'it']))
                                 <li class="nav-item">
-                                    <a class="nav-link {{ request()->routeIs('watson.payroll.dashboard') ? 'active' : '' }}"
-                                        href="{{ route('watson.payroll.dashboard') }}">
+                                    <a class="nav-link {{ request()->routeIs('company.payrolls.dashboard') ? 'active' : '' }}"
+                                        href="{{ route('company.payrolls.dashboard', ['company' => $session]) }}">
                                         <i class="icon">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="10"
                                                 viewBox="0 0 24 24" fill="currentColor">
@@ -228,17 +231,125 @@
                 <li>
                     <hr class="hr-horizontal">
                 </li>
-            </ul>
-            <!-- Sidebar Menu End -->
+                @if (hasRole(['owner', 'it', 'secretary']))
+                    <li class="nav-item">
 
-            {{-- Optional promo card: keep or remove --}}
-            <div class="card bg-primary text-white text-center iq-post m-3">
-                <div class="card-body">
-                    <h3 class="mb-2 text-white">Quick Tip</h3>
-                    <p class="text-white mb-4">Build Trips/Dispatch first. Everything connects to it.</p>
-                    <a href="#" class="btn bg-white text-primary iq-btn">View Details</a>
-                </div>
-            </div>
+                        <a class="nav-link" data-bs-toggle="collapse" href="#sidebar-management" role="button"
+                            aria-expanded="{{ request()->routeIs('owner.users.*') ? 'true' : 'false' }}"
+                            aria-controls="sidebar-management">
+
+                            <i class="icon">
+                                <svg width="20" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M11.9488 14.54C8.49884 14.54 5.58789 15.1038 5.58789 17.2795C5.58789 19.4562 8.51765 20.0001 11.9488 20.0001C15.3988 20.0001 18.3098 19.4364 18.3098 17.2606C18.3098 15.084 15.38 14.54 11.9488 14.54Z"
+                                        fill="currentColor"></path>
+
+                                    <path opacity="0.4"
+                                        d="M11.949 12.467C14.2851 12.467 16.1583 10.5831 16.1583 8.23351C16.1583 5.88306 14.2851 4 11.949 4C9.61293 4 7.73975 5.88306 7.73975 8.23351C7.73975 10.5831 9.61293 12.467 11.949 12.467Z"
+                                        fill="currentColor"></path>
+                                </svg>
+                            </i>
+
+                            <span class="item-name">Management</span>
+
+                            <i class="right-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="none"
+                                    viewBox="0 0 24 24" stroke="currentColor">
+
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 5l7 7-7 7" />
+
+                                </svg>
+                            </i>
+
+                        </a>
+
+
+                        <ul class="sub-nav collapse {{ request()->routeIs('owner.users.*') ? 'show' : '' }}"
+                            id="sidebar-management" data-bs-parent="#sidebar-menu">
+
+                            @if (hasRole(['owner', 'it', 'secretary']))
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('owner.payroll.expenses') ? 'active' : '' }}"
+                                        href="{{ route('owner.payroll.expenses') }}">
+                                        <i class="icon">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="10"
+                                                viewBox="0 0 24 24" fill="currentColor">
+                                                <circle cx="12" cy="12" r="8"></circle>
+                                            </svg>
+                                        </i>
+                                        <i class="sidenav-mini-icon">E</i>
+                                        <span class="item-name">Expenses & Budget </span>
+                                    </a>
+                                </li>
+                            @endif
+
+                            @if (hasRole(['owner', 'it']))
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('owner.users.index') ? 'active' : '' }}"
+                                        href="{{ route('owner.users.index') }}">
+
+                                        <i class="icon">
+                                            <svg width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                <circle cx="12" cy="12" r="8"></circle>
+                                            </svg>
+                                        </i>
+
+                                        <span class="item-name">Users</span>
+
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('owner.users.reports') ? 'active' : '' }}"
+                                        href="{{ route('owner.users.reports') }}">
+
+                                        <i class="icon">
+                                            <svg width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                <circle cx="12" cy="12" r="8"></circle>
+                                            </svg>
+                                        </i>
+
+                                        <span class="item-name">Reports</span>
+
+                                    </a>
+                                </li>
+
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('owner.reports.maintenance') ? 'active' : '' }}"
+                                        href="{{ route('owner.reports.maintenance') }}">
+
+                                        <i class="icon">
+                                            <svg width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                <circle cx="12" cy="12" r="8"></circle>
+                                            </svg>
+                                        </i>
+
+                                        <span class="item-name">Maintenance</span>
+
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link {{ request()->routeIs('admin.company') ? 'active' : '' }}"
+                                        href="{{ route('admin.company') }}">
+
+                                        <i class="icon">
+                                            <svg width="10" viewBox="0 0 24 24" fill="currentColor">
+                                                <circle cx="12" cy="12" r="8"></circle>
+                                            </svg>
+                                        </i>
+
+                                        <span class="item-name">Company</span>
+
+                                    </a>
+                                </li>
+                            @endif
+
+                        </ul>
+
+                    </li>
+                @endif
         </div>
 
         <div class="p-2"></div>

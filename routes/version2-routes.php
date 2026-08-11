@@ -4,6 +4,7 @@ use App\Http\Controllers\Version2\CompanyController;
 use App\Http\Controllers\Version2\DashboardController;
 use App\Http\Controllers\Version2\DestinationController;
 use App\Http\Controllers\Version2\DispatchTripController;
+use App\Http\Controllers\Version2\EmployeeController;
 use App\Http\Controllers\Version2\PayrollController;
 use App\Models\Destination;
 use App\Models\Driver;
@@ -84,7 +85,7 @@ Route::middleware(['auth', 'role:owner,it,admin,secretary'])
             Route::put('/update/{data}', 'update')->name('admin.company.update');
             Route::delete('/remove/{data}', 'destroy')->name('admin.company.destroy');
         });
-        Route::resource('employees', DestinationController::class)->names([
+        Route::resource('employees', EmployeeController::class)->names([
             'index' => 'admin.employees.index',
             'create' => 'admin.employees.create',
             'store' => 'admin.employees.store',
@@ -93,6 +94,7 @@ Route::middleware(['auth', 'role:owner,it,admin,secretary'])
             'update' => 'admin.employees.update',
             'destroy' => 'admin.employees.destroy',
         ]);
+        Route::post('/employees/delete-multiple', [EmployeeController::class, 'deleteMultiple'])->name('admin.employees.delete-multiple');
         Route::get('/employee', function () {
             Driver::each(function ($driver) {
                 Employee::firstOrCreate(

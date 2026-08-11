@@ -134,8 +134,8 @@
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('watson.drivers.*') ? 'active' : '' }}"
-                                    href="{{ route('watson.drivers.index') }}">
+                                <a class="nav-link {{ request()->routeIs('admin.employees.*') ? 'active' : '' }}"
+                                    href="{{ route('admin.employees.index') }}">
                                     <i class="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24"
                                             fill="currentColor">

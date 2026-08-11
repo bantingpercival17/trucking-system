@@ -169,7 +169,8 @@
                                                             stroke-width="2"
                                                             d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                     </svg>
-                                                    Billing Status: {{ $item->billing_status ? 'Billed' :'Pending' ?? 'Unbilled' }}
+                                                    Billing Status:
+                                                    {{ $item->billing_status ? 'Billed' : 'Pending' ?? 'Unbilled' }}
                                                 </div>
                                             </div>
                                             <div class="col-6">
@@ -218,7 +219,8 @@
                                     <span class="text-uppercase fw-bold text-muted small tracking-wider d-block">
                                         Destination
                                     </span>
-                                    <h4 class="h5 fw-bold text-dark mt-1 mb-1">{{ $item->destination->name() }}</h4>
+                                    <h4 class="h5 fw-bold text-dark mt-1 mb-1">{{ $item->destination->destinationName() }}
+                                    </h4>
                                     <p class="text-muted small mb-0 d-flex align-items-center gap-1">
                                         <svg width="14" height="14" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">

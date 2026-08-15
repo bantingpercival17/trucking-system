@@ -1,52 +1,14 @@
-@extends('layouts.watson')
-
+@extends('layouts.appV2')
 @section('title', 'Destinations')
-
+@section('sub-title', 'DESTINATIONS')
+@php
+    $params = request()->route('company') ?: 'all';
+@endphp
 @section('content')
     <div class="container-fluid py-4">
 
-        {{-- HEADER --}}
-        <div class="ui-hero p-4 mb-4">
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-
-                <div>
-                    <h4 class="fw-bold mb-1">Destinations</h4>
-                    <div class="text-info fw-bolder small">
-                        Routes & Rate Card — 6W / 4W / AUV, planning and costing.
-                    </div>
-                </div>
-
-                <form method="GET" action="{{ route('watson.destinations.index') }}" class="d-flex align-items-center gap-2">
-
-                    <div class="ui-search-wrapper">
-                        <i class="bi bi-search"></i>
-                        <input type="text" name="q" value="{{ request('q') }}" class="form-control"
-                            placeholder="Search destination, area, origin...">
-                    </div>
-
-                    @if (request('type'))
-                        <input type="hidden" name="type" value="{{ request('type') }}">
-                    @endif
-
-                    @if (request('q'))
-                        <a href="{{ route('watson.destinations.index', array_filter(['type' => request('type')])) }}"
-                            class="btn ui-btn ui-btn-clear">
-                            Clear
-                        </a>
-                    @endif
-
-                    <button type="button" class="btn ui-btn ui-btn-add" data-bs-toggle="modal"
-                        data-bs-target="#addDestinationModal">
-                        <i class="bi bi-plus-lg me-1"></i> Add
-                    </button>
-
-                </form>
-
-            </div>
-        </div>
-
         {{-- TRUCK TYPE TABS --}}
-        <ul class="nav nav-pills mb-3 gap-2">
+        {{--  <ul class="nav nav-pills mb-3 gap-2">
             <li class="nav-item">
                 <a class="nav-link {{ !request('type') ? 'active' : '' }}"
                     href="{{ route('watson.destinations.index', array_filter(['q' => request('q')])) }}">
@@ -71,89 +33,132 @@
                     AUV <span class="badge bg-light text-dark ms-1">{{ $counts['AUV'] }}</span>
                 </a>
             </li>
-        </ul>
+        </ul> --}}
 
         <div class="card shadow-sm">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <div
+                    class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+                    <div class="ui-trips-head-left">
+                        <h3 class="mb-0 fw-bolder text-primary">Trip Destinations Fees</h3>
+                        <div class="text-info fw-bolder small">
+                            Routes & Rate Card — 6W / 4W / AUV, planning and costing.
+                        </div>
+
+                    </div>
+                    @session('error')
+                        <div class="alert alert-danger alert-dismissible fade show m-0" role="alert">
+                            {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endsession
+                    @session('success')
+                        <div class="alert alert-success alert-dismissible fade show m-0" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endsession
+                </div>
+
+                {{-- Controls --}}
+                <div
+                    class="mt-3 d-flex flex-column flex-lg-row gap-2 align-items-stretch align-items-lg-center justify-content-between">
+                    <form method="GET" action="{{ route('company.destinations.index', ['company' => $params]) }}"
+                        class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center m-0 flex-grow-1">
+
+                        <div class="ui-search ui-header-search" style="max-width: 520px; width: 100%;">
+                            <input type="text" name="q" value="{{ request('q') }}"
+                                class="form-control border border-primary ui-search-input"
+                                placeholder="Search destination, area, origin...">
+                        </div>
+
+
+
+                        @if (request('sort'))
+                            <input type="hidden" name="sort" value="{{ request('sort') }}">
+                        @endif
+                        @if (request('dir'))
+                            <input type="hidden" name="dir" value="{{ request('dir') }}">
+                        @endif
+
+                        @if (request('q'))
+                            <a href="{{ route('company.destinations.index', ['company' => $params]) }}"
+                                class="btn btn-outline-secondary btn-sm ui-pill-btn ui-btn-equal">
+                                Clear
+                            </a>
+                        @endif
+
+
+                    </form>
+
+                    <div class="text-muted small mt-1 ui-showing">
+                        @if ($destinations->total())
+                            Showing <strong>{{ $destinations->firstItem() }}–{{ $destinations->lastItem() }}</strong>
+                            /
+                            <strong>{{ $destinations->total() }}</strong>
+                        @else
+                            Showing <strong>0</strong> / <strong>0</strong>
+                        @endif
+                    </div>
+                    <div class="ui-trips-head-right">
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="small text-muted m-0">Show</label>
+
+                            <select name="per_page" class="form-select form-select-sm" style="width:auto;">
+                                @foreach ([10, 25, 50, 100] as $n)
+                                    <option value="{{ $n }}"
+                                        {{ (int) request('per_page', 10) === $n ? 'selected' : '' }}>
+                                        {{ $n }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            <span class="small text-muted">entries</span>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column flex-sm-row gap-2">
+                        <button type="button" class="btn ui-btn ui-btn-add" data-bs-toggle="modal"
+                            data-bs-target="#addDestinationModal">
+                            <i class="bi bi-plus-lg me-1"></i> Add
+                        </button>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-start justify-content-lg-end mt-3">
+                    <ul class="nav nav-pills mb-3 gap-2">
+                        <li class="nav-item">
+                            <a class="nav-link {{ !request('type') ? 'active' : '' }}"
+                                href="{{ route('watson.destinations.index', array_filter(['q' => request('q')])) }}">
+                                All
+                            </a>
+                        </li>
+                        @foreach ($truckTypes as $item)
+                            <li class="nav-item">
+                                <a class="nav-link {{ request('type') === $item ? 'active' : '' }}" {{-- 'company.destinations.index', ['company' => $params] --}}
+                                    href="{{ route('company.destinations.index', ['company' => $params, 'q' => request('q'), 'type' => $item]) }}">
+                                    {{ $item }} <span
+                                        class="badge bg-light text-dark ms-1">{{ $counts[$item] }}</span>
+                                </a>
+                            </li>
+                        @endforeach
+                    </ul>
+                    <div class="ms-auto">
+                        {{ $destinations->onEachSide(1)->links('vendor.pagination.ui-datatable') }}
+                    </div>
+                </div>
+                <div class="ui-divider mt-3"></div>
+            </div>
             <div class="card-body">
+
                 <div class="table-responsive">
                     <table class="table align-middle">
-
-                        @php
-                            function watsonSortDirection($column)
-                            {
-                                if (request('sort') !== $column) {
-                                    return 'asc';
-                                }
-                                if (request('direction') === 'asc') {
-                                    return 'desc';
-                                }
-                                if (request('direction') === 'desc') {
-                                    return null;
-                                }
-                                return 'asc';
-                            }
-
-                            function watsonSortIcon($column)
-                            {
-                                if (request('sort') !== $column) {
-                                    return '↕';
-                                }
-                                if (request('direction') === 'asc') {
-                                    return '↑';
-                                }
-                                if (request('direction') === 'desc') {
-                                    return '↓';
-                                }
-                                return '↕';
-                            }
-                        @endphp
-
                         <thead>
                             <tr>
-                                <th>ORIGIN</th>
-                                <th>
-                                    <a href="{{ route(
-                                        'watson.destinations.index',
-                                        array_filter([
-                                            'q' => request('q'),
-                                            'type' => request('type'),
-                                            'sort' => watsonSortDirection('destination_name') ? 'destination_name' : null,
-                                            'direction' => watsonSortDirection('destination_name'),
-                                        ]),
-                                    ) }}"
-                                        class="ui-sort">
-                                        AREA {!! watsonSortIcon('destination_name') !!}
-                                    </a>
-                                </th>
-                                {{--   <th>
-                                    <a href="{{ route(
-                                        'watson.destinations.index',
-                                        array_filter([
-                                            'q' => request('q'),
-                                            'type' => request('type'),
-                                            'sort' => watsonSortDirection('area') ? 'area' : null,
-                                            'direction' => watsonSortDirection('area'),
-                                        ]),
-                                    ) }}"
-                                        class="ui-sort">
-                                        AREA {!! watsonSortIcon('area') !!}
-                                    </a>
-                                </th> --}}
+                                <th>COMPANY</th>
+                                <th>DESTINATION CODE</th>
+                                <th>STORE NAME</th>
+                                <th>AREA</th>
                                 <th>TRUCK TYPE</th>
-                                <th>
-                                    <a href="{{ route(
-                                        'watson.destinations.index',
-                                        array_filter([
-                                            'q' => request('q'),
-                                            'type' => request('type'),
-                                            'sort' => watsonSortDirection('rate') ? 'rate' : null,
-                                            'direction' => watsonSortDirection('rate'),
-                                        ]),
-                                    ) }}"
-                                        class="ui-sort">
-                                        RATE {!! watsonSortIcon('rate') !!}
-                                    </a>
-                                </th>
+                                <th>RATE</th>
                                 <th>REMARKS</th>
                                 <th width="120">ACTION</th>
                             </tr>
@@ -162,11 +167,13 @@
                         <tbody>
                             @forelse($destinations as $d)
                                 <tr class="position-relative">
-                                    <td class="text-info fw-bolder">{{ $d->origin ?? '-' }}</td>
+                                    <td class="text-{{ $d->company->badge_color }} fw-bolder">
+                                        {{ $d->company->name ?? '-' }}</td>
+                                    <td class="text-info fw-bolder">{{ $d->destination_code ?? '-' }}</td>
                                     <td>
-                                        <div class="fw-semibold">{{ $d->destination_name }}</div>
+                                        <div class="fw-semibold">{{ $d->store_name ?? '-' }}</div>
                                     </td>
-                                    {{-- <td class="text-info fw-bolder">{{ $d->area ?? '-' }}</td> --}}
+                                    <td class="text-info fw-bolder">{{ $d->area ?? '-' }}</td>
                                     <td>
                                         <span class="badge bg-secondary-subtle text-dark">{{ $d->truck_type }}</span>
                                     </td>
@@ -183,7 +190,7 @@
                                                 ✏️
                                             </button>
                                             <button class="btn btn-sm btn-danger delete-btn" data-id="{{ $d->id }}"
-                                                data-name="{{ $d->destination_name }} ({{ $d->truck_type }})">
+                                                data-name="{{ $d->area }} ({{ $d->truck_type }})">
                                                 🗑️
                                             </button>
                                         </div>
@@ -196,42 +203,56 @@
                                         <div class="modal-content">
 
                                             <div class="modal-header">
-                                                <h5>Edit Destination</h5>
+                                                <h5 class="text-info fw-bolder">EDIT DESTINATION</h5>
                                                 <button class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
 
                                             <form method="POST"
-                                                action="{{ route('watson.destinations.update', $d->id) }}">
+                                                action="{{ route('company.destinations.update', ['company' => $params, 'destination' => $d->id]) }}">
                                                 @csrf
                                                 @method('PUT')
 
                                                 <div class="modal-body">
+                                                    <small class="text-muted">COMPANY <sup
+                                                            class="text-danger">*</sup></small>
+                                                    <select name="company_id" id=""
+                                                        class="form-select border border-primary" required>
+                                                        <option value="" disabled selected>Select Company
+                                                        </option>
+                                                        @foreach ($companyList as $company)
+                                                            <option value="{{ $company->id }}"
+                                                                {{ $d->company_id == $company->id ? 'selected' : '' }}>
+                                                                {{ $company->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
                                                     <div class="form-group">
-                                                        <label class="form-label small text-info fw-bolder">Origin</label>
+                                                        <small class="text-muted">CODE <sup
+                                                                class="text-info">(OPTIONAL)</sup></small>
                                                         <input class="form-control border border-primary text-primary"
-                                                            name="origin" value="{{ $d->origin }}"
+                                                            name="destination_code" value="{{ $d->destination_code }}"
                                                             placeholder="e.g. PMP (optional)">
                                                     </div>
-
                                                     <div class="form-group">
-                                                        <label class="form-label small text-info fw-bolder">Area /
-                                                            Province</label>
+                                                        <small class="text-muted">STORE NAME <sup
+                                                                class="text-info">(OPTIONAL)</sup></small>
                                                         <input class="form-control border border-primary text-primary"
-                                                            name="destination_name" value="{{ $d->destination_name }}"
-                                                            required>
+                                                            name="store_name" value="{{ $d->store_name }}"
+                                                            placeholder="e.g. PUREGOLD (optional)">
                                                     </div>
-
-                                                    {{-- <div class="col-md-6">
-                                                            <label class="form-label small text-info fw-bolder">Area</label>
-                                                            <input class="form-control border border-primary text-primary" name="area"
-                                                                value="{{ $d->area }}" placeholder="Area (optional)">
-                                                        </div> --}}
+                                                    <div class="form-group">
+                                                        <small class="text-muted">DESTINATION / AREA<sup
+                                                                class="text-danger">*</sup></small>
+                                                        <input class="form-control border border-primary text-primary"
+                                                            name="area" value="{{ $d->area }}"
+                                                            placeholder="e.g. BALIWAG BULACAN">
+                                                    </div>
 
                                                     <div class=form-group>
                                                         <label class="form-label small text-info fw-bolder">Truck
                                                             Type</label>
                                                         <select class="form-select" name="truck_type" required>
-                                                            @foreach (['6W', '4W', 'AUV'] as $type)
+                                                            @foreach ($truckTypes as $type)
                                                                 <option value="{{ $type }}"
                                                                     {{ $d->truck_type === $type ? 'selected' : '' }}>
                                                                     {{ $type }}</option>
@@ -276,9 +297,6 @@
                     </table>
                 </div>
 
-                <div class="mt-3">
-                    {{ $destinations->links() }}
-                </div>
             </div>
         </div>
     </div>
@@ -301,10 +319,17 @@
                 <div class="modal-footer">
                     <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 
-                    <form method="POST" id="deleteForm">
+                    <form method="POST" id="deleteForm"
+                        action="{{ route('company.destinations.destroy', [
+                            'company' => $params,
+                            'destination' => '__ID__',
+                        ]) }}">
                         @csrf
                         @method('DELETE')
-                        <button class="btn btn-danger">Delete</button>
+
+                        <button type="submit" class="btn btn-danger">
+                            Delete
+                        </button>
                     </form>
                 </div>
 
@@ -318,42 +343,55 @@
             <div class="modal-content">
 
                 <div class="modal-header">
-                    <h5>Add Destination</h5>
+                    <h5 class="text-primary fw-bolder">ADD DESTINATION</h5>
                     <button class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
-                <form method="POST" action="{{ route('watson.destinations.store') }}">
+                <form method="POST" action="{{ route('company.destinations.store', $params) }}">
                     @csrf
 
                     <div class="modal-body">
                         <div class="form-group">
-                            <input class="form-control border border-primary text-primary" name="origin"
-                                placeholder="Origin (e.g. PMP, optional)">
-                        </div>
-                        <div class="form-group">
-                            <input class="form-control border border-primary text-primary" name="destination_name"
-                                placeholder="Area / Province (optional)" required>
-                        </div>
-                        {{--   <div class="form-group">
-                            <input class="form-control border border-primary text-primary" name="area"
-                                placeholder="Area / Province (optional)">
-                        </div> --}}
-                        <div class="form-group">
-                            <select class="form-select border border-primary text-primary" name="truck_type" required>
-                                <option value="" disabled selected>Truck Type</option>
-                                <option value="6W">6W</option>
-                                <option value="4W">4W</option>
-                                <option value="AUV">AUV</option>
-                                <option value="4WCV">4WCV</option>
-                                <option value="L300">L300</option>
+                            <small class="text-muted">COMPANY <sup class="text-danger">*</sup></small>
+                            <select name="company_id" id="" class="form-select border border-primary" required>
+                                <option value="" disabled selected>Select Company</option>
+                                @foreach ($companyList as $company)
+                                    <option value="{{ $company->id }}">{{ $company->name }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="form-group">
+                            <small class="text-muted">CODE <sup class="text-info">(OPTIONAL)</sup></small>
+                            <input class="form-control border border-primary text-primary" name="destination_code"
+                                placeholder=" (e.g. PMP, optional)">
+                        </div>
+                        <div class="form-group">
+                            <small class="text-muted">STORE NAME <sup class="text-info">(OPTIONAL)</sup></small>
+                            <input class="form-control border border-primary text-primary" name="store_name"
+                                placeholder="ex. Store / Branch (optional)">
+                        </div>
+                        <div class="form-group">
+                            <small class="text-muted">DESTINATION / AREA<sup class="text-info">*</sup></small>
+                            <input class="form-control border border-primary text-primary" name="area"
+                                placeholder="Area / Province" required>
+                        </div>
+                        <div class="form-group">
+                            <small class="text-muted">COMPANY <sup class="text-danger">*</sup></small>
+                            <select class="form-select border border-primary text-primary" name="truck_type" required>
+                                <option value="" disabled selected>Truck Type</option>
+                                @foreach ($truckTypes as $item)
+                                    <option value="{{ $item }}">{{ $item }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <small class="text-muted">RATE <sup class="text-danger">*</sup></small>
                             <input type="number" step="0.01" class="form-control border border-primary text-primary"
                                 name="rate" placeholder="Rate" required>
                         </div>
 
                         <div class="form-group">
+                            <small class="text-muted">REMARKS <sup class="text-info">(OPTIONAL)</sup></small>
                             <input class="form-control border border-primary text-primary" name="remarks"
                                 placeholder="Remarks (optional)">
                         </div>
@@ -376,12 +414,12 @@
                 btn.addEventListener('click', function() {
                     const id = this.dataset.id;
                     const name = this.dataset.name;
-
                     document.getElementById('deleteName').textContent = name;
-                    document.getElementById('deleteForm').action =
-                        `/watson/destinations/${id}`;
-
-                    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+                    const form = document.getElementById('deleteForm');
+                    form.action = form.action.replace('__ID__', id);
+                    new bootstrap.Modal(
+                        document.getElementById('deleteModal')
+                    ).show();
                 });
             });
         });

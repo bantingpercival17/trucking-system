@@ -636,9 +636,6 @@
                                                         </label>
                                                     </div>
                                                 @endif
-
-
-
                                             </div>
                                         </div>
                                     </div>
@@ -647,14 +644,14 @@
                                             <div class="mb-3 col-md">
                                                 <small class="fw-bolder text-info">Name <span
                                                         class="text-danger">*</span></small>
-                                                <input type="text" name="name"
+                                                <input type="text" name="name" value="{{ $driver->name }}"
                                                     class="form-control border border-primary" required>
                                             </div>
 
                                             <div class="mb-3 col-md">
                                                 <small class="fw-bolder text-info">Email <span
                                                         class="text-danger">*</span></small>
-                                                <input type="email" name="email"
+                                                <input type="email" name="email" value="{{ $driver->email }}"
                                                     class="form-control border border-primary"
                                                     placeholder="example@email.com">
                                             </div>
@@ -662,13 +659,13 @@
                                         <div class="row">
                                             <div class="mb-3 col-md">
                                                 <label class="form-label">Birthday</label>
-                                                <input type="date" name="birthday"
+                                                <input type="date" name="birthday" value="{{ $driver->date_of_birth }}"
                                                     class="form-control border border-primary">
                                             </div>
 
                                             <div class="mb-3 col-md">
                                                 <label class="form-label">Contact Number</label>
-                                                <input type="text" name="contact_number"
+                                                <input type="text" name="contact_number"value="{{ $driver->name }}"
                                                     class="form-control border border-primary"
                                                     placeholder="+63 9XXXXXXXXX">
                                             </div>

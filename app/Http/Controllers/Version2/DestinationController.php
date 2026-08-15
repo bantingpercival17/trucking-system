@@ -24,7 +24,8 @@ class DestinationController extends Controller
             $q = $request->q;
             $query->where(function ($query) use ($q) {
                 $query->where('area', 'like', "%{$q}%")
-                    ->orWhere('origin', 'like', "%{$q}%");
+                    ->orWhere('store_name', 'like', "%{$q}%")
+                    ->orWhere('destination_code', 'like', "%{$q}%");
             });
         }
         // Truck-type tab (6W / 4W / AUV / all)
@@ -46,7 +47,7 @@ class DestinationController extends Controller
         if ($company) {
             $query->where('company_id', $company->id);
         }
-        $destinations = $query->where('is_deleted', false)->paginate(15)->appends($request->all());
+        $destinations = $query->where('is_deleted', false)->orderBy('updated_at', 'desc')->paginate(15)->appends($request->all());
 
         $query = TruckDestination::whereIn('truck_type', $truckTypes)
             ->selectRaw('truck_type, COUNT(*) as total');
@@ -80,13 +81,16 @@ class DestinationController extends Controller
             'company_id' => 'nullable|max:100',
             'destination_code' => 'nullable|string|max:100',
             'store_name' => 'nullable|string|max:100',
-            'area' => 'nullable|string|max:255',
+            'area' => 'required|string|max:255',
             'truck_type' => 'required',
             'rate' => 'required|numeric|min:0',
             'remarks' => 'nullable|string',
         ]);
         try {
             //return $data;
+            $data = array_map(function ($value) {
+                return is_string($value) ? strtoupper($value) : $value;
+            }, $data);
             TruckDestination::create($data);
             return back()->with('success', 'Destination added successfully.');
         } catch (\Throwable $th) {
@@ -98,31 +102,44 @@ class DestinationController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(string $id, int $destination, Request $request)
     {
-        $destination = TruckDestination::findOrFail($id);
-        $data = $request->validate([
-            'company_id' => 'nullable|max:100',
-            'destination_code' => 'nullable|string|max:100',
-            'store_name' => 'nullable|string|max:100',
-            'area' => 'nullable|string|max:255',
-            'truck_type' => 'required',
-            'rate' => 'required|numeric|min:0',
-            'remarks' => 'nullable|string',
-        ]);
-        $destination->update($data);
-        return back()->with('success', 'Destination updated successfully.');
+
+        try {
+            $data = $request->validate([
+                'company_id' => 'nullable|max:100',
+                'destination_code' => 'nullable|string|max:100',
+                'store_name' => 'nullable|string|max:100',
+                'area' => 'required|string|max:255',
+                'truck_type' => 'required',
+                'rate' => 'required|numeric|min:0',
+                'remarks' => 'nullable|string',
+            ]);
+            $destination = TruckDestination::findOrFail($destination);
+            $data = array_map(function ($value) {
+                return is_string($value) ? strtoupper($value) : $value;
+            }, $data);
+            $destination->update($data);
+            return back()->with('success', 'Destination updated successfully.');
+        } catch (\Throwable $th) {
+            return back()->with('error', 'Update Destination: ' . $th->getMessage());
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(string $id, $destination)
     {
-        $destination = TruckDestination::findOrFail($id);
-        $destination->is_deleted = true;
-        $destination->save();
-        return back()->with('success', 'Destination deleted successfully.');
+        // return $destination;
+        try {
+            $destination = TruckDestination::findOrFail($destination);
+            $destination->is_deleted = true;
+            $destination->save();
+            return back()->with('success', 'Destination deleted successfully.');
+        } catch (\Throwable $th) {
+            return back()->with('error', $th->getMessage());
+        }
     }
     function destinationList($data)
     {

@@ -833,7 +833,9 @@
                         </button>
                     </div>
                 </div>
-
+                <div class="d-flex justify-content-start justify-content-lg-end mt-3">
+                    {{ $dispatchList->onEachSide(1)->links('vendor.pagination.ui-datatable') }}
+                </div>
                 <div class="ui-divider mt-3"></div>
             </div>
             <div class="card-body">

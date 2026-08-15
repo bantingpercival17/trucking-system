@@ -117,7 +117,9 @@
                     </form>
 
                 </div>
-
+                <div class="d-flex justify-content-end mt-4">
+                    {{ $trips->links('vendor.pagination.ui-datatable') }}
+                </div>
                 <div class="ui-divider mt-3"></div>
 
             </div>

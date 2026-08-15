@@ -108,7 +108,35 @@ class EmployeeController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        //
+        try {
+            $employee = Employee::findOrFail($id);
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'nullable|email|unique:employees,email,' . $employee->id . '|max:255',
+                'type' => 'required|string',
+                'birthday' => 'nullable|date',
+                'contact_number' => 'nullable|string|max:50',
+                'address' => 'nullable|string|max:1000',
+                'emergency_contact_person' => 'nullable|string|max:255',
+                'emergency_contact_number' => 'nullable|string|max:50',
+            ]);
+
+            $data = [
+                'name' => $request->name,
+                'email' => $request->email,
+                'type' => $request->type,
+                'contact_number' => $request->contact_number,
+                'address' => $request->address,
+                'birthday' => $request->birthday,
+            ];
+            if ($request->hasFile('profile_photo')) {
+                $data['profile_photo'] = $request->file('profile_photo')->store('drivers', 'public');
+            }
+            $employee->update($data);
+            return back()->with('success', 'Driver updated.');
+        } catch (\Throwable $th) {
+            return back()->with('error', $th->getMessage());
+        }
     }
 
     /**
@@ -123,7 +151,7 @@ class EmployeeController extends Controller
         $ids = $request->ids ?? [];
 
         if (!empty($ids)) {
-            Employee::whereIn('id', $ids)->update(['is_deleted' => false]);
+            Employee::whereIn('id', $ids)->update(['is_deleted' => true]);
         }
 
         return back()->with('success', 'Selected drivers deleted.');

@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Employee extends Model
 {
     protected $fillable = ['name', 'email', 'type', 'phone', 'address', 'date_of_birth', 'license_number', 'profile_picture', 'is_available', 'is_active'];
-
+    protected $casts = [
+        'date_of_birth' => 'date',
+    ];
     public function payrollList(array $data)
     {
         return $this->hasMany(TripPayroll::class, 'employee_id')

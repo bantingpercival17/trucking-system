@@ -319,26 +319,53 @@ class DispatchTripController extends Controller
         $query = DispatchDestinationTrip::where('is_deleted', false)
             ->when($company, function ($query, $company) {
                 $companyModel = Company::where('name', $company)->first();
+
                 if ($companyModel) {
                     $query->where('company_id', $companyModel->id);
                 }
             })
             ->whereIn('dispatch_status', ['Completed']);
 
-        //return $query;
-        // Group by billing status, Billed, Pending, Unbilled
-        $dispatchList = (clone $query)->latest()->paginate(10);
+        $dispatchList = (clone $query)
+            ->when($request->status, function ($query, $status) {
+
+                if ($status !== 'Unbilled') {
+                    $status = [
+                        'Billed' => 1,
+                        'Pending' => 0,
+                    ][$status] ?? null;
+                    $query->where('billing_status', $status);
+                } else {
+                    $query->whereNull('billing_status');
+                }
+            })
+            ->when($request->check_date, function ($query, $check_date) {
+                $query->where('check_release_date', $check_date);
+            })
+            ->latest()
+            ->paginate($request->per_page ?? 10)
+            ->withQueryString();
+
+
+        $billingQuery = (clone $query)->where('billing_status', 1);
+        $pendingQuery = (clone $query)->where('billing_status', 0);
+        $unbillingQuery = (clone $query)->whereNull('billing_status');
         $dashboardData = [
-            'totalTrips' => (clone $query)->count(),
-            'billedTrips' => (clone $query)->where('billing_status', 'Billed')->count(),
-            'billedTripsCount' => (clone $query)->where('billing_status', 'Billed')->count(),
-            'unbilledTrips' => (clone $query)->where('billing_status', 'Unbilled')->count(),
-            'unbilledTripsCount' => (clone $query)->where('billing_status', 'Unbilled')->count(),
-            'pendingTrips' => (clone $query)->where('billing_status', 'Pending')->count(),
-            'pendingTripsCount' => (clone $query)->where('billing_status', 'Pending')->count(),
+            'billedTrips' => $billingQuery->get()->sum(function ($trip) {
+                return $trip->destination->rate ?? 0;
+            }),
+            'billedTripsCount' => $billingQuery->count(),
+            'pendingTrips' => $pendingQuery->get()->sum(function ($trip) {
+                return $trip->destination->rate ?? 0;
+            }),
+            'pendingTripsCount' => $pendingQuery->count(),
+            'unbilledTrips' => $unbillingQuery->get()->sum(function ($trip) {
+                return $trip->destination->rate ?? 0;
+            }),
+            'unbilledTripsCount' => $unbillingQuery->count(),
         ];
-        // Total Billed Amount
-        $dashboardData['totalBilledAmount'] = (clone $query)->where('billing_status', 'Billed')->get()->sum(function ($trip) {
+        $dashboardData['totalTrips'] = (clone $query)->count();
+        $dashboardData['totalBilledAmount'] = (clone $query)->where('billing_status', 1)->get()->sum(function ($trip) {
             return $trip->destination->rate ?? 0;
         });
 

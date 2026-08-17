@@ -21,6 +21,8 @@ class DispatchDestinationTrip extends Model
         'trip_ticket_no',
         'is_deleted',
         'completed_at',
+        'billing_status',
+        'check_release_date'
     ];
     protected $casts = [
         'dispatch_date' => 'date',

@@ -7,7 +7,7 @@
 @section('content')
     <div class="container-fluid py-4">
         <div class="row mb-4">
-            <div class="col-lg-4">
+            {{-- <div class="col-lg-4">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-body d-flex flex-column justify-content-center">
                         <div class="text-muted small mb-1">
@@ -23,19 +23,19 @@
                     </div>
 
                 </div>
-            </div>
+            </div> --}}
             <div class="col">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-body  row">
-                        <div class="unbilled col">
+                        <div class="billed col">
                             <div class="text-muted small mb-1">
-                                UNBILLED AMOUNT
+                                BILLED AMOUNT
                             </div>
                             <h3 class="fw-bold mb-0 text-primary">
-                                ₱{{ number_format($dashboardData['unbilledTrips'], 2) }}
+                                ₱{{ number_format($dashboardData['billedTrips'], 2) }}
                             </h3>
                             <div class="small text-muted mt-2">
-                                UNBILLED TRIPS {{ $dashboardData['unbilledTripsCount'] }}
+                                BILLED TRIPS {{ $dashboardData['billedTripsCount'] }}
                             </div>
                         </div>
                         <div class="pending col">
@@ -49,17 +49,18 @@
                                 PENDING TRIPS {{ $dashboardData['pendingTripsCount'] }}
                             </div>
                         </div>
-                        <div class="billed col">
+                        <div class="unbilled col">
                             <div class="text-muted small mb-1">
-                                BILLED AMOUNT
+                                UNBILLED AMOUNT
                             </div>
                             <h3 class="fw-bold mb-0 text-primary">
-                                ₱{{ number_format($dashboardData['billedTrips'], 2) }}
+                                ₱{{ number_format($dashboardData['unbilledTrips'], 2) }}
                             </h3>
                             <div class="small text-muted mt-2">
-                                BILLED TRIPS {{ $dashboardData['billedTripsCount'] }}
+                                UNBILLED TRIPS {{ $dashboardData['unbilledTripsCount'] }}
                             </div>
                         </div>
+
                     </div>
 
                 </div>
@@ -91,50 +92,59 @@
                 </div>
 
                 {{-- Controls --}}
-                <div
-                    class="mt-3 d-flex flex-column flex-lg-row gap-2 align-items-stretch align-items-lg-center justify-content-between">
-                    <form method="GET" action="{{ route('company.destinations.index', ['company' => $params]) }}"
-                        class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center m-0 flex-grow-1">
+                <form method="GET" action="{{ route('admin.billing.show', ['company' => $params]) }}" class="row">
 
-                        <div class="ui-search ui-header-search" style="max-width: 520px; width: 100%;">
-                            <input type="text" name="q" value="{{ request('q') }}"
-                                class="form-control border border-primary ui-search-input"
-                                placeholder="Search destination, area, origin...">
-                        </div>
+                    <div class="ui-search ui-header-search col">
+                        <input type="text" name="q" value="{{ request('q') }}"
+                            class="form-control border border-primary ui-search-input"
+                            placeholder="Search destination, area, origin...">
+                    </div>
+                    <div class="col">
+                        <small class="fw-semibold text-muted">Payment Status</small>
+                        <select name="status" class="col form-control form-select border border-primary rounded"
+                            onchange="this.form.submit()">
+                            <option value="a" {{ request('status') == '' ? 'selected' : 'All' }}>
+                                All
+                            </option>
+                            <option value="Billed" {{ request('status') == 'Billed' ? 'selected' : '' }}>
+                                Billed
+                            </option>
+                            <option value="Pending" {{ request('status') == 'Pending' ? 'selected' : '' }}>
+                                Pending
+                            </option>
+                            <option value="Unbilled" {{ request('status') == 'Unbilled' ? 'selected' : '' }}>
+                                Unbilled
+                            </option>
+
+                        </select>
+                    </div>
+
+                    <div class="col">
+                        <small class="fw-semibold text-muted">Check Release</small>
+                        <input type="date" name="check_date" value="{{ request('check_date') }}"
+                            class="form-control filter-input" onchange="this.form.submit()">
+                    </div>
 
 
-
-                        @if (request('sort'))
-                            <input type="hidden" name="sort" value="{{ request('sort') }}">
-                        @endif
-                        @if (request('dir'))
-                            <input type="hidden" name="dir" value="{{ request('dir') }}">
-                        @endif
-
-                        @if (request('q'))
-                            <a href="{{ route('company.destinations.index', ['company' => $params]) }}"
-                                class="btn btn-outline-secondary btn-sm ui-pill-btn ui-btn-equal">
-                                Clear
-                            </a>
-                        @endif
-
-
-                    </form>
-
-                    <div class="text-muted small mt-1 ui-showing">
+                
+                <div class="d-flex justify-content-start justify-content-lg-end mt-3">
+                    <div class="text-muted small  ui-showing me-2 me-lg-3">
                         @if ($dispatchList->total())
-                            Showing <strong>{{ $dispatchList->firstItem() }}–{{ $dispatchList->lastItem() }}</strong>
+                            Showing
+                            <strong>{{ $dispatchList->firstItem() }}–{{ $dispatchList->lastItem() }}</strong>
                             /
                             <strong>{{ $dispatchList->total() }}</strong>
                         @else
                             Showing <strong>0</strong> / <strong>0</strong>
                         @endif
+
                     </div>
                     <div class="ui-trips-head-right">
                         <div class="d-flex align-items-center gap-2">
                             <label class="small text-muted m-0">Show</label>
 
-                            <select name="per_page" class="form-select form-select-sm" style="width:auto;">
+                            <select name="per_page" class="form-select form-select-sm" style="width:auto;"
+                                onchange="this.form.submit()">
                                 @foreach ([10, 25, 50, 100] as $n)
                                     <option value="{{ $n }}"
                                         {{ (int) request('per_page', 10) === $n ? 'selected' : '' }}>
@@ -146,31 +156,23 @@
                             <span class="small text-muted">entries</span>
                         </div>
                     </div>
-                    <div class="d-flex flex-column flex-sm-row gap-2">
-                        <button type="button" class="btn ui-btn ui-btn-add" data-bs-toggle="modal"
-                            data-bs-target="#addDestinationModal">
-                            <i class="bi bi-plus-lg me-1"></i> Add
-                        </button>
-                    </div>
-                </div>
-                <div class="d-flex justify-content-start justify-content-lg-end mt-3">
-
                     <div class="ms-auto">
                         {{ $dispatchList->onEachSide(1)->links('vendor.pagination.ui-datatable') }}
                     </div>
                 </div>
+                </form>
                 <div class="ui-divider mt-3"></div>
             </div>
             <div class="card-body">
                 <div id="list-view-container">
                     @forelse ($dispatchList as $item)
                         <div
-                            class="card h-100 rounded-4 p-4 trip-card bg-white d-flex flex-column justify-content-between gap-3">
+                            class="card h-100 rounded-4 p-4 trip-card bg-white d-flex flex-column justify-content-between gap-3 border border-info">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div class="d-flex align-items-center gap-2">
                                     <span
                                         class="badge bg-{{ $item->company->badge_color }} px-2.5 py-1.5 rounded-3 fw-bold">{{ $item->company->name }}</span>
-                                    <span class="text-muted small font-monospace">{{ $item->trip_ticket_no ?? '-' }}</span>
+                                    <span class="badge bg-info">{{ $item->trip_ticket_no ?? '-' }}</span>
                                 </div>
                                 <div class="d-flex align-items-center gap-1.5 text-muted small fw-medium">
                                     @if (in_array($item->dispatch_status, ['Draft', 'Dispatched', 'Assigned', 'Completed']))
@@ -231,15 +233,18 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="action-button mt-2 row">
-                                        <div class="col-md">
-                                            <button type="button" class="btn btn-sm btn-outline-primary w-100"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#editBillingModal{{ $item->id }}">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
+                                    @if ($item->billing_status != 1)
+                                        <div class="action-button mt-2 row">
+                                            <div class="col-md">
+                                                <button type="button" class="btn btn-sm btn-outline-primary w-100"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#editBillingModal{{ $item->id }}">
+                                                    <i class="bi bi-money"></i> Posting Check Payments
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
+                                    @endif
+
                                 </div>
                                 <div class="col-md destination-information">
                                     <span class="text-uppercase fw-bold text-muted small tracking-wider d-block">

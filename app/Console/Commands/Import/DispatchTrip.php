@@ -15,7 +15,7 @@ class DispatchTrip extends Command
      *
      * @var string
      */
-    protected $signature = 'app:dispatch-trip';
+    protected $signature = 'run:dispatch-trip';
 
     /**
      * The console command description.
@@ -37,6 +37,7 @@ class DispatchTrip extends Command
             $employee = Employee::where('name', $value->driver->name)->first();
             $helper = $value->helpers();
             $dispatchHelper = DB::table('dispatch_trip_helpers')->where('dispatch_trip_id', $value->id)->get();
+            $billingStatus = array('Unbilled' => null, 'Pending' => 0, 'Billed' => 1);
             $data = array(
                 'company_id' => 1,
                 'destination_id' => $truckDestination->id,
@@ -50,7 +51,12 @@ class DispatchTrip extends Command
                 'trip_ticket_no' => $value->trip_ticket_no,
                 'dispatch_status' => 'Completed',
                 'completed_at' => $value->completed_at,
+                'created_at' => $value->created_at,
+                'updated_at' => $value->updated_at,
+                'billing_status' => $billingStatus[$value->billing_status],
+                'check_release_date' => $value->check_release_date,
             );
+
             echo json_encode($data);
             echo "\n";
             try {

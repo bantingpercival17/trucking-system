@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class DispatchDestinationTrip extends Model
 {
+
     protected $fillable = [
         'company_id',
         'destination_id',
@@ -20,6 +21,12 @@ class DispatchDestinationTrip extends Model
         'trip_ticket_no',
         'is_deleted',
         'completed_at',
+    ];
+    protected $casts = [
+        'dispatch_date' => 'date',
+        'assigned_at' => 'date',
+        'dispatched_at' => 'date',
+        'completed_at' => 'date',
     ];
     function company()
     {

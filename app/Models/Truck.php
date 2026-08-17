@@ -41,5 +41,13 @@ class Truck extends Model
     {
         return $this->hasMany(TruckDocument::class);
     }
+    function dispatchHistory()
+    {
+        return $this->hasMany(DispatchDestinationTrip::class, 'truck_id', 'id')->orderBy('dispatch_date', 'desc');
+    }
+    function activeDispatchTrip()
+    {
+        return $this->hasOne(DispatchDestinationTrip::class, 'truck_id', 'id')->where('dispatch_status', '=', 'Dispatched')->latest('dispatch_date');
+    }
 }
 // Relationship: latest assigned driver (via DispatchTrip)

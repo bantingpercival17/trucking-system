@@ -6,6 +6,7 @@ use App\Http\Controllers\Version2\DestinationController;
 use App\Http\Controllers\Version2\DispatchTripController;
 use App\Http\Controllers\Version2\EmployeeController;
 use App\Http\Controllers\Version2\PayrollController;
+use App\Http\Controllers\Version2\VehicleController;
 use App\Models\Destination;
 use App\Models\Driver;
 use App\Models\Employee;
@@ -76,6 +77,15 @@ Route::middleware(['auth', 'role:owner,it,admin,secretary'])
             'edit' => 'admin.destinations.edit',
             'update' => 'admin.destinations.update',
             'destroy' => 'admin.destinations.destroy',
+        ]);
+        Route::resource('vehicle', VehicleController::class)->names([
+            'index' => 'admin.vehicles.index',
+            'create' => 'admin.vehicles.create',
+            'store' => 'admin.vehicles.store',
+            'show' => 'admin.vehicles.show',
+            'edit' => 'admin.vehicles.edit',
+            'update' => 'admin.vehicles.update',
+            'destroy' => 'admin.vehicles.destroy',
         ]);
         Route::get('/destinations/{data}', [DestinationController::class, 'destinationList']);
         Route::get('/truck-destinations/{data}', [DestinationController::class, 'truckList']);

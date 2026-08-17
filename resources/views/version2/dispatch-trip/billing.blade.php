@@ -126,40 +126,40 @@
                     </div>
 
 
-                
-                <div class="d-flex justify-content-start justify-content-lg-end mt-3">
-                    <div class="text-muted small  ui-showing me-2 me-lg-3">
-                        @if ($dispatchList->total())
-                            Showing
-                            <strong>{{ $dispatchList->firstItem() }}–{{ $dispatchList->lastItem() }}</strong>
-                            /
-                            <strong>{{ $dispatchList->total() }}</strong>
-                        @else
-                            Showing <strong>0</strong> / <strong>0</strong>
-                        @endif
 
-                    </div>
-                    <div class="ui-trips-head-right">
-                        <div class="d-flex align-items-center gap-2">
-                            <label class="small text-muted m-0">Show</label>
+                    <div class="d-flex justify-content-start justify-content-lg-end mt-3">
+                        <div class="text-muted small  ui-showing me-2 me-lg-3">
+                            @if ($dispatchList->total())
+                                Showing
+                                <strong>{{ $dispatchList->firstItem() }}–{{ $dispatchList->lastItem() }}</strong>
+                                /
+                                <strong>{{ $dispatchList->total() }}</strong>
+                            @else
+                                Showing <strong>0</strong> / <strong>0</strong>
+                            @endif
 
-                            <select name="per_page" class="form-select form-select-sm" style="width:auto;"
-                                onchange="this.form.submit()">
-                                @foreach ([10, 25, 50, 100] as $n)
-                                    <option value="{{ $n }}"
-                                        {{ (int) request('per_page', 10) === $n ? 'selected' : '' }}>
-                                        {{ $n }}
-                                    </option>
-                                @endforeach
-                            </select>
+                        </div>
+                        <div class="ui-trips-head-right">
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="small text-muted m-0">Show</label>
 
-                            <span class="small text-muted">entries</span>
+                                <select name="per_page" class="form-select form-select-sm" style="width:auto;"
+                                    onchange="this.form.submit()">
+                                    @foreach ([10, 25, 50, 100] as $n)
+                                        <option value="{{ $n }}"
+                                            {{ (int) request('per_page', 10) === $n ? 'selected' : '' }}>
+                                            {{ $n }}
+                                        </option>
+                                    @endforeach
+                                </select>
+
+                                <span class="small text-muted">entries</span>
+                            </div>
+                        </div>
+                        <div class="ms-auto">
+                            {{ $dispatchList->onEachSide(1)->links('vendor.pagination.ui-datatable') }}
                         </div>
                     </div>
-                    <div class="ms-auto">
-                        {{ $dispatchList->onEachSide(1)->links('vendor.pagination.ui-datatable') }}
-                    </div>
-                </div>
                 </form>
                 <div class="ui-divider mt-3"></div>
             </div>

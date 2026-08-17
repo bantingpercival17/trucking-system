@@ -270,7 +270,7 @@ class DispatchTripController extends Controller
 
         return back()->with('success', 'All trips deleted.');
     }
-    public function show(Request $request, $company = null)
+    public function show($company, Request $request)
     {
 
         $dispatchList = DispatchDestinationTrip::where('is_deleted', false)
@@ -313,5 +313,36 @@ class DispatchTripController extends Controller
         }
         $trip->save();
         return back()->with('success', 'Billing updated.');
+    }
+    public function showBilling($company, Request $request)
+    {
+        $query = DispatchDestinationTrip::where('is_deleted', false)
+            ->when($company, function ($query, $company) {
+                $companyModel = Company::where('name', $company)->first();
+                if ($companyModel) {
+                    $query->where('company_id', $companyModel->id);
+                }
+            })
+            ->whereIn('dispatch_status', ['Completed']);
+
+        //return $query;
+        // Group by billing status, Billed, Pending, Unbilled
+        $dispatchList = (clone $query)->latest()->paginate(10);
+        $dashboardData = [
+            'totalTrips' => (clone $query)->count(),
+            'billedTrips' => (clone $query)->where('billing_status', 'Billed')->count(),
+            'billedTripsCount' => (clone $query)->where('billing_status', 'Billed')->count(),
+            'unbilledTrips' => (clone $query)->where('billing_status', 'Unbilled')->count(),
+            'unbilledTripsCount' => (clone $query)->where('billing_status', 'Unbilled')->count(),
+            'pendingTrips' => (clone $query)->where('billing_status', 'Pending')->count(),
+            'pendingTripsCount' => (clone $query)->where('billing_status', 'Pending')->count(),
+        ];
+        // Total Billed Amount
+        $dashboardData['totalBilledAmount'] = (clone $query)->where('billing_status', 'Billed')->get()->sum(function ($trip) {
+            return $trip->destination->rate ?? 0;
+        });
+
+        //return compact('dispatchList', 'dashboardData');
+        return view('version2.dispatch-trip.billing', compact('dispatchList', 'dashboardData'));
     }
 }

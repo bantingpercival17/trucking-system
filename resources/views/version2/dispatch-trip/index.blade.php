@@ -764,7 +764,7 @@
                     </div>
 
                     {{-- RIGHT SIDE BUTTON --}}
-                    <a href="{{ route('admin.dispatch-trip.history') }}"
+                    <a href="{{ route('company.dispatch.history', ['company' => $params]) }}"
                         class="btn btn-info btn-sm text-white ui-pill-btn">
                         <i class="bi bi-clock-history me-1"></i> Dispatch Trips History
                     </a>

@@ -1,134 +1,171 @@
 @extends('layouts.appV2')
-@section('title', 'Trips History')
-@section('sub-title', 'Dispatch Trips History')
+@section('title', 'Billing')
+@section('sub-title', 'Billing')
 @php
     $params = request()->route('company') ?: 'all';
 @endphp
-
 @section('content')
     <div class="container-fluid py-4">
+        <div class="row mb-4">
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body d-flex flex-column justify-content-center">
+                        <div class="text-muted small mb-1">
+                            Total Billing Amount
+                        </div>
+                        <h3 class="fw-bold mb-0 text-primary">
+                            ₱{{ number_format($dashboardData['totalBilledAmount'], 2) }}
+                        </h3>
+                        <div class="small text-muted mt-2">
+                            {{ request('check_date') ? \Carbon\Carbon::parse(request('check_date'))->format('F d, Y') : 'Billing total' }}
+                        </div>
 
-        <div class="ui-hero p-4 mb-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h4 class="fw-bold mb-1">Trips History</h4>
-                    <div class="text-muted small">
-                        Completed and cancelled trips.
                     </div>
+
                 </div>
             </div>
-        </div>
-
-        <div class="card ui-card border-0">
-
-            <div class="card-header bg-transparent border-0 pb-0">
-
-                {{-- Title + pager --}}
-                <div
-                    class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
-
-                    <div class="ui-trips-head-left">
-                        <h6 class="mb-0 fw-semibold">Trips History</h6>
-
-                        <div class="text-muted small mt-1 ui-showing">
-
-                            @if ($dispatchList->total())
-                                Showing
-                                <strong>{{ $dispatchList->firstItem() }}–{{ $dispatchList->lastItem() }}</strong>
-                                /
-                                <strong>{{ $dispatchList->total() }}</strong>
-                            @else
-                                Showing <strong>0</strong> / <strong>0</strong>
-                            @endif
-
+            <div class="col">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body  row">
+                        <div class="unbilled col">
+                            <div class="text-muted small mb-1">
+                                UNBILLED AMOUNT
+                            </div>
+                            <h3 class="fw-bold mb-0 text-primary">
+                                ₱{{ number_format($dashboardData['unbilledTrips'], 2) }}
+                            </h3>
+                            <div class="small text-muted mt-2">
+                                UNBILLED TRIPS {{ $dashboardData['unbilledTripsCount'] }}
+                            </div>
+                        </div>
+                        <div class="pending col">
+                            <div class="text-muted small mb-1">
+                                PENDING AMOUNT
+                            </div>
+                            <h3 class="fw-bold mb-0 text-primary">
+                                ₱{{ number_format($dashboardData['pendingTrips'], 2) }}
+                            </h3>
+                            <div class="small text-muted mt-2">
+                                PENDING TRIPS {{ $dashboardData['pendingTripsCount'] }}
+                            </div>
+                        </div>
+                        <div class="billed col">
+                            <div class="text-muted small mb-1">
+                                BILLED AMOUNT
+                            </div>
+                            <h3 class="fw-bold mb-0 text-primary">
+                                ₱{{ number_format($dashboardData['billedTrips'], 2) }}
+                            </h3>
+                            <div class="small text-muted mt-2">
+                                BILLED TRIPS {{ $dashboardData['billedTripsCount'] }}
+                            </div>
                         </div>
                     </div>
 
-                    {{-- RIGHT SIDE BUTTONS --}}
-                    <div class="d-flex align-items-center gap-2">
-
-                        <a href="{{ route('company.payrolls.dashboard', ['company' => $params]) }}"
-                            class="btn btn-outline-secondary btn-sm ui-pill-btn">
-                            <i class="bi bi-cash me-1"></i> Payroll
-                        </a>
-
-                        <a href="/admin/{{ $params }}/dispatch-trip"
-                            class="btn btn-outline-secondary btn-sm ui-pill-btn">
-                            <i class="bi bi-truck me-1"></i> Dispatch
-                        </a>
-                        <a href="{{ route('admin.billing.show', ['company' => $params]) }}"
-                            class="btn btn-outline-secondary btn-sm ui-pill-btn">
-                            <i class="bi bi-receipt me-1"></i> Billing
-                        </a>
-                    </div>
-
                 </div>
+            </div>
+        </div>
+        <div class="card shadow-sm">
+            <div class="card-header bg-transparent border-0 pb-0">
+                <div
+                    class="d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-3">
+                    <div class="ui-trips-head-left">
+                        <h3 class="mb-0 fw-bolder text-primary">Billing</h3>
+                        <div class="text-info fw-bolder small">
+                            Billing information for dispatched trips. You can update the billing details for each trip here.
+                        </div>
 
+                    </div>
+                    @session('error')
+                        <div class="alert alert-danger alert-dismissible fade show m-0" role="alert">
+                            {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endsession
+                    @session('success')
+                        <div class="alert alert-success alert-dismissible fade show m-0" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endsession
+                </div>
 
                 {{-- Controls --}}
                 <div
                     class="mt-3 d-flex flex-column flex-lg-row gap-2 align-items-stretch align-items-lg-center justify-content-between">
-
-                    <form method="GET" action="{{ route('watson.trips.history') }}"
+                    <form method="GET" action="{{ route('company.destinations.index', ['company' => $params]) }}"
                         class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center m-0 flex-grow-1">
 
-                        <div class="ui-search ui-header-search" style="max-width:520px;width:100%;">
-                            <i class="bi bi-search ui-search-icon"></i>
-
+                        <div class="ui-search ui-header-search" style="max-width: 520px; width: 100%;">
                             <input type="text" name="q" value="{{ request('q') }}"
-                                class="form-control ui-search-input" placeholder="Search trip ticket, truck, driver...">
+                                class="form-control border border-primary ui-search-input"
+                                placeholder="Search destination, area, origin...">
                         </div>
 
 
+
+                        @if (request('sort'))
+                            <input type="hidden" name="sort" value="{{ request('sort') }}">
+                        @endif
+                        @if (request('dir'))
+                            <input type="hidden" name="dir" value="{{ request('dir') }}">
+                        @endif
+
                         @if (request('q'))
-                            <a href="{{ route('watson.trips.history', request()->except('q', 'page')) }}"
+                            <a href="{{ route('company.destinations.index', ['company' => $params]) }}"
                                 class="btn btn-outline-secondary btn-sm ui-pill-btn ui-btn-equal">
                                 Clear
                             </a>
                         @endif
 
 
-                        {{-- SHOW ENTRIES --}}
-                        <div class="ui-trips-head-right">
-
-                            <div class="d-flex align-items-center gap-2">
-
-                                <label class="small text-muted m-0">Show</label>
-
-                                <select name="per_page" class="form-select form-select-sm" style="width:auto;">
-
-                                    @foreach ([10, 25, 50, 100] as $n)
-                                        <option value="{{ $n }}"
-                                            {{ (int) request('per_page', 10) === $n ? 'selected' : '' }}>
-
-                                            {{ $n }}
-
-                                        </option>
-                                    @endforeach
-
-                                </select>
-
-                                <span class="small text-muted">entries</span>
-
-                            </div>
-
-                        </div>
-
                     </form>
 
+                    <div class="text-muted small mt-1 ui-showing">
+                        @if ($dispatchList->total())
+                            Showing <strong>{{ $dispatchList->firstItem() }}–{{ $dispatchList->lastItem() }}</strong>
+                            /
+                            <strong>{{ $dispatchList->total() }}</strong>
+                        @else
+                            Showing <strong>0</strong> / <strong>0</strong>
+                        @endif
+                    </div>
+                    <div class="ui-trips-head-right">
+                        <div class="d-flex align-items-center gap-2">
+                            <label class="small text-muted m-0">Show</label>
+
+                            <select name="per_page" class="form-select form-select-sm" style="width:auto;">
+                                @foreach ([10, 25, 50, 100] as $n)
+                                    <option value="{{ $n }}"
+                                        {{ (int) request('per_page', 10) === $n ? 'selected' : '' }}>
+                                        {{ $n }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            <span class="small text-muted">entries</span>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column flex-sm-row gap-2">
+                        <button type="button" class="btn ui-btn ui-btn-add" data-bs-toggle="modal"
+                            data-bs-target="#addDestinationModal">
+                            <i class="bi bi-plus-lg me-1"></i> Add
+                        </button>
+                    </div>
                 </div>
-                <div class="d-flex justify-content-end mt-4">
-                    {{ $dispatchList->links('vendor.pagination.ui-datatable') }}
+                <div class="d-flex justify-content-start justify-content-lg-end mt-3">
+
+                    <div class="ms-auto">
+                        {{ $dispatchList->onEachSide(1)->links('vendor.pagination.ui-datatable') }}
+                    </div>
                 </div>
                 <div class="ui-divider mt-3"></div>
-
             </div>
-
             <div class="card-body">
                 <div id="list-view-container">
                     @forelse ($dispatchList as $item)
                         <div
-                            class="card h-100 rounded-4 p-4 trip-card bg-white d-flex flex-column justify-content-between gap-3 border border-info">
+                            class="card h-100 rounded-4 p-4 trip-card bg-white d-flex flex-column justify-content-between gap-3">
                             <div class="d-flex align-items-center justify-content-between">
                                 <div class="d-flex align-items-center gap-2">
                                     <span
@@ -192,6 +229,15 @@
                                                     {{ $item->check_number ?: '-' }}
                                                 </span>
                                             </div>
+                                        </div>
+                                    </div>
+                                    <div class="action-button mt-2 row">
+                                        <div class="col-md">
+                                            <button type="button" class="btn btn-sm btn-outline-primary w-100"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#editBillingModal{{ $item->id }}">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -303,6 +349,25 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = this.dataset.id;
+                    const name = this.dataset.name;
+                    document.getElementById('deleteName').textContent = name;
+                    const form = document.getElementById('deleteForm');
+                    form.action = form.action.replace('__ID__', id);
+                    new bootstrap.Modal(
+                        document.getElementById('deleteModal')
+                    ).show();
+                });
+            });
+        });
+    </script>
+@endpush
 
 @push('styles')
     <style>

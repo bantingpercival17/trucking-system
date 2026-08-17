@@ -30,7 +30,10 @@ Route::middleware(['auth', 'role:owner,it,admin,secretary'])
                 'edit' => 'company.dispatch.edit',
                 'update' => 'company.dispatch.update',
                 'destroy' => 'company.dispatch.destroy',
+                //'show' => 'company.dispatch.history',
             ]);
+            Route::get('/dispatch-trip/history', [DispatchTripController::class, 'show'])->name('company.dispatch.history');
+
             Route::resource('destination', DestinationController::class)->names([
                 'index' => 'company.destinations.index',
                 'create' => 'company.destinations.create',
@@ -63,7 +66,7 @@ Route::middleware(['auth', 'role:owner,it,admin,secretary'])
         Route::get('/dispatch-trip/list', function () {
             return 'true';
         })->name('admin.dispatch-trip.list');
-        Route::get('/dispatch-trip/history', [DispatchTripController::class, 'dispatchHistory'])->name('admin.dispatch-trip.history');
+        // Route::get('/dispatch-trip/history', [DispatchTripController::class, 'dispatchHistory'])->name('admin.dispatch-trip.history');
         Route::post('/dispatch-trip/destroy-all', [DispatchTripController::class, 'destroyAll'])->name('admin.dispatch.destroy-all');
         Route::post('/dispatch-trip/assign/{data}', [DispatchTripController::class, 'assign'])->name('admin.dispatch.assign');
         Route::post('/dispatch-trip/dispatch/{data}', [DispatchTripController::class, 'dispatch'])->name('admin.dispatch.dispatch');
@@ -167,5 +170,15 @@ Route::middleware(['auth', 'role:owner,it,admin,secretary'])
                 ]);
             });
             echo 'Flash imported successfully.<br>';
+        });
+
+
+        // Billing : for the payment of the trip, the admin can update the billing information of the trip
+        Route::prefix('/{company}/billing')->group(function () {
+            Route::controller(DispatchTripController::class)->group(function () {
+                Route::get('/', 'showBilling')->name('admin.billing.show');
+                Route::put('/update/{id}', 'updateBilling')->name('admin.billing.update');
+            });
+            //Route::put('/update/{id}', 'updateBilling')->name('admin.billing.update');
         });
     });

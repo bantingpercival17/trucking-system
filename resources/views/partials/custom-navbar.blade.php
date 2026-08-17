@@ -51,7 +51,12 @@
                                 $company = strtolower('all');
                                 $routeName = request()->route()->getName();
 
-                                $url = Str::contains($routeName, ['.destinations.', '.dispatch.', '.payrolls.','.billing.'])
+                                $url = Str::contains($routeName, [
+                                    '.destinations.',
+                                    '.dispatch.',
+                                    '.payrolls.',
+                                    '.billing.',
+                                ])
                                     ? route(
                                         $routeName,
                                         array_merge(request()->route()->parameters(), ['company' => $company]),
@@ -67,7 +72,12 @@
                                 $company = strtolower($item->name);
                                 $routeName = request()->route()->getName();
 
-                                $url = Str::contains($routeName, ['.destinations.', '.dispatch.', '.payrolls.'])
+                                $url = Str::contains($routeName, [
+                                    '.destinations.',
+                                    '.dispatch.',
+                                    '.payrolls.',
+                                    '.billing.',
+                                ])
                                     ? route(
                                         $routeName,
                                         array_merge(request()->route()->parameters(), ['company' => $company]),

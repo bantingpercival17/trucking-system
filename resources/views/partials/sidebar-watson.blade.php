@@ -198,7 +198,7 @@
                         <ul class="sub-nav collapse" id="sidebar-finance" data-bs-parent="#sidebar-menu">
                             <li class="nav-item">
                                 <a class="nav-link {{ request()->routeIs('admin.billing') ? 'active' : '' }}"
-                                    href="{{ route('admin.billing.show', ['company' => $session]) }}">
+                                    href="{{ route('company.billing.show', ['company' => $session]) }}">
                                     <i class="icon">
                                         <svg xmlns="http://www.w3.org/2000/svg" width="10" viewBox="0 0 24 24"
                                             fill="currentColor">

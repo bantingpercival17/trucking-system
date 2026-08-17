@@ -92,7 +92,7 @@
                 </div>
 
                 {{-- Controls --}}
-                <form method="GET" action="{{ route('admin.billing.show', ['company' => $params]) }}" class="row">
+                <form method="GET" action="{{ route('company.billing.show', ['company' => $params]) }}" class="row">
 
                     <div class="ui-search ui-header-search col">
                         <input type="text" name="q" value="{{ request('q') }}"

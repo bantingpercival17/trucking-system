@@ -176,7 +176,7 @@ Route::middleware(['auth', 'role:owner,it,admin,secretary'])
         // Billing : for the payment of the trip, the admin can update the billing information of the trip
         Route::prefix('/{company}/billing')->group(function () {
             Route::controller(DispatchTripController::class)->group(function () {
-                Route::get('/', 'showBilling')->name('admin.billing.show');
+                Route::get('/', 'showBilling')->name('company.billing.show');
                 Route::put('/update/{id}', 'updateBilling')->name('admin.billing.update');
             });
             //Route::put('/update/{id}', 'updateBilling')->name('admin.billing.update');

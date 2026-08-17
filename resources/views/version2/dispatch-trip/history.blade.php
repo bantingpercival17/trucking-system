@@ -56,7 +56,7 @@
                             class="btn btn-outline-secondary btn-sm ui-pill-btn">
                             <i class="bi bi-truck me-1"></i> Dispatch
                         </a>
-                        <a href="{{ route('admin.billing.show', ['company' => $params]) }}"
+                        <a href="{{ route('company.billing.show', ['company' => $params]) }}"
                             class="btn btn-outline-secondary btn-sm ui-pill-btn">
                             <i class="bi bi-receipt me-1"></i> Billing
                         </a>

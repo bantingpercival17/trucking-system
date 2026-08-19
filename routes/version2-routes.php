@@ -108,7 +108,8 @@ Route::middleware(['auth', 'role:owner,it,admin,secretary'])
             'destroy' => 'admin.employees.destroy',
         ]);
         Route::post('/employees/delete-multiple', [EmployeeController::class, 'deleteMultiple'])->name('admin.employees.delete-multiple');
-        Route::get('/employee', function () {
+        // Export Employees
+        Route::get('/import-employees', function () {
             Driver::each(function ($driver) {
                 Employee::firstOrCreate(
                     ['name' => $driver->name,],

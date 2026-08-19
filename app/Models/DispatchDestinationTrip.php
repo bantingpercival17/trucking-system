@@ -22,7 +22,9 @@ class DispatchDestinationTrip extends Model
         'is_deleted',
         'completed_at',
         'billing_status',
-        'check_release_date'
+        'check_release_date',
+        'created_at',
+        'updated_at'
     ];
     protected $casts = [
         'dispatch_date' => 'date',

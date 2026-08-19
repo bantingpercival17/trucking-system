@@ -287,7 +287,7 @@ class PayrollController extends Controller
         if ($checkDate) {
             $tripsQuery->whereDate('check_release_date', $checkDate);
         }
-        
+
         $totalBillingAmount = (clone $tripsQuery)->sum('rate_snapshot');
 
         // SEARCH
@@ -318,7 +318,7 @@ class PayrollController extends Controller
 
         $trips = $tripsQuery->orderBy($sort, $dir)->paginate($perPage)->withQueryString();
 
-        return view('owner.payroll.billing', compact('trips', 'q', 'sort', 'dir','totalBillingAmount'));
+        return view('owner.payroll.billing', compact('trips', 'q', 'sort', 'dir', 'totalBillingAmount'));
     }
 
     public function updateAllowances(Request $request)
@@ -724,8 +724,8 @@ class PayrollController extends Controller
 
                     return [
                         'id' => $t->id,
-                        'date' => Carbon::parse($t->dispatch_date)->format('Y-m-d'),
-                        'location' => $t->destination->store_name ?? '-',
+                        'date' => Carbon::parse($t->dispatch_date)->format('F d, Y'),
+                        'location' => $t->destination->store_name . " - " . $t->trip_ticket_no ?? '-',
                         'rate' => $rate,
                         'amount' => $amount,
                         'allowance' => $allowance,
@@ -789,7 +789,7 @@ class PayrollController extends Controller
                     'id' => $t->id,
                     'helper_id' => $h->id,
                     'helper_name' => $h->name,
-                    'date' => Carbon::parse($t->dispatch_date)->format('Y-m-d'),
+                    'date' => Carbon::parse($t->dispatch_date)->format('F d, Y'),
                     'location' => $t->destination->store_name ?? '-',
                     'rate' => $rate,
                     'amount' => $amount,

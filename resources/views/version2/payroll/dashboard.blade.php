@@ -1,7 +1,9 @@
-@extends('layouts.watson')
-
-@section('title', 'Watson Payroll')
-
+@extends('layouts.appV2')
+@section('title', 'Dashboard Payroll')
+@section('sub-title', 'Employee Payroll')
+@php
+    $params = request()->route('company') ?: 'all';
+@endphp
 @section('content')
 
     <div class="container-fluid py-4">
@@ -19,7 +21,8 @@
                 <div class="d-flex gap-2">
 
                     <a class="btn btn-outline-secondary"
-                        href="{{ route('watson.payroll.index', [
+                        href="{{ route('company.payrolls.index', [
+                            'company' => $params,
                             'from' => request('from'),
                             'to' => request('to'),
                         ]) }}">
@@ -36,48 +39,7 @@
 
         {{-- KPI --}}
 
-        <div class="row g-3 mb-4">
 
-            {{-- Trips Ready --}}
-            <div class="col-12 col-md-8 col-lg-4 d-flex">
-                <div class="card ui-card border-0 ui-indicator ui-indicator-primary ui-kpi-card h-80 w-100"
-                    style="margin-bottom: 0px;">
-                    <div class="card-body text-center ui-kpi-body">
-                        <div class="ui-kpi-label">Trips Ready 🚚</div>
-                        <div class="ui-kpi-number text-primary">
-                            {{ $pendingTrips }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Drivers --}}
-            <div class="col-12 col-md-8 col-lg-4 d-flex">
-                <div class="card ui-card border-0 ui-indicator ui-indicator-success ui-kpi-card h-80 w-100"
-                    style="margin-bottom: 0px;">
-                    <div class="card-body text-center ui-kpi-body">
-                        <div class="ui-kpi-label">Drivers to Pay 👨‍✈️</div>
-                        <div class="ui-kpi-number text-success">
-                            {{ $drivers }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Payroll Total --}}
-            <div class="col-12 col-md-8 col-lg-4 d-flex">
-                <div class="card ui-card border-0 ui-indicator ui-indicator-warning ui-kpi-card h-80 w-100"
-                    style="margin-bottom: 0px;">
-                    <div class="card-body text-center ui-kpi-body">
-                        <div class="ui-kpi-label">Payroll Total 💰</div>
-                        <div class="ui-kpi-number text-warning">
-                            ₱ {{ number_format($total, 2) }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
 
 
         {{-- QUEUE --}}
@@ -114,55 +76,35 @@
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Driver</th>
-                            <th>Trips</th>
-                            <th>Amount</th>
-                            <th>Status</th>
+                            <th>EMPLOYEE NAME</th>
+                            <th>EMPLOYEE TYPE</th>
+                            <th>TOTAL DISPATCH TRIP</th>
+                            <th>TOTAL SALARY AMOUNT</th>
+                            <th>SALARY STATUS</th>
                         </tr>
                     </thead>
 
                     <tbody>
-                        @foreach ($queue as $q)
+                        @forelse ($employeeSalary as $item)
                             <tr>
-                                <td>{{ $q['name'] }}</td>
-                                <td>{{ $q['trips'] }}</td>
-                                <td>₱ {{ number_format($q['amount'], 2) }}</td>
+                                <td>{{ $item['name'] }}</td>
+                                <td>{{ $item['type'] }}</td>
+                                <td>{{ $item['totalDispatch'] }}</td>
+                                <td>₱ {{ number_format($item['totalSalary'], 2) }}</td>
                                 <td>
                                     <span
                                         class="badge 
-                                        {{ $q['status'] === 'Unpaid' ? 'bg-danger' : 'bg-success' }}">
-                                        {{ $q['status'] }}
+                                        {{ $item['status'] === 'UNPAID' ? 'bg-danger' : 'bg-success' }}">
+                                        {{ $item['status'] }}
                                     </span>
                                 </td>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-  <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Helper</th>
-                            <th>Trips</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
+                        @empty
+                            <tr>
+                                <th colspan="5">NO TRANSACTIONS</th>
+                            </tr>
+                        @endforelse
 
-                    <tbody>
-                        @foreach ($queue as $q)
-                            <tr>
-                                <td>{{ $q['name'] }}</td>
-                                <td>{{ $q['trips'] }}</td>
-                                <td>₱ {{ number_format($q['amount'], 2) }}</td>
-                                <td>
-                                    <span
-                                        class="badge 
-                                        {{ $q['status'] === 'Unpaid' ? 'bg-danger' : 'bg-success' }}">
-                                        {{ $q['status'] }}
-                                    </span>
-                                </td>
-                            </tr>
-                        @endforeach
                     </tbody>
                 </table>
             </div>

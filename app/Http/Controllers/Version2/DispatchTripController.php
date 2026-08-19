@@ -151,6 +151,8 @@ class DispatchTripController extends Controller
             ->filter() // Removes null, 0, false, or empty strings
             ->count();
         if ($employee->type === 'driver') {
+            // Driver Rate Calculation
+            //  no Helper
             if ($dispatch->company_id == 3) {
                 $rate = $helperCount > 0 ? $fixRate[0] : $fixRate[2];
             } else {
@@ -161,6 +163,7 @@ class DispatchTripController extends Controller
                 }
             }
         } else {
+            // Helper Rate Calculation
             if ($dispatch->company_id == 3) {
                 $rate = $fixRate[1];
             } else {
@@ -327,6 +330,9 @@ class DispatchTripController extends Controller
             ->whereIn('dispatch_status', ['Completed']);
 
         $dispatchList = (clone $query)
+            ->when($request->q, function ($query, $code) {
+                $query->where('trip_ticket_no', $code);
+            })
             ->when($request->status, function ($query, $status) {
 
                 if ($status !== 'Unbilled') {

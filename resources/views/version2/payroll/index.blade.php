@@ -1,7 +1,9 @@
-@extends('layouts.watson')
-
+@extends('layouts.appV2')
 @section('title', 'Payroll')
-
+@section('sub-title', 'Employee Payroll')
+@php
+    $params = request()->route('company') ?: 'all';
+@endphp
 @section('content')
 
 
@@ -67,7 +69,16 @@
 
                         </button>
                     </li>
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabHelpers" type="button">
 
+                            Helpers
+                            <span class="badge bg-light text-dark ms-1">
+                                {{ $helpersPayroll->count() }}
+                            </span>
+
+                        </button>
+                    </li>
 
                     <form method="POST" action="{{ route('watson.payroll.finalize') }}"
                         class="d-flex w-full w-md-auto justify-content-start mt-2 mt-md-0">
@@ -83,9 +94,109 @@
 
                 </ul>
 
-                {{-- DRIVERS --}}
+                {{-- Tab Content --}}
                 <div class="tab-pane fade show active" id="tabDrivers">
-                    @forelse($driversPayroll as $p)
+                    @forelse ($employeeSalary as $employee)
+                        @php
+                            $status = $employee['status'] ?? 'UNPAID';
+                            $badge = match ($status) {
+                                'PAID' => 'success',
+                                'PARTIAL' => 'warning',
+                                'OVERPAID' => 'info',
+                                'NO TRIPS' => 'secondary',
+                                default => 'danger',
+                            };
+                        @endphp
+
+                        <form>
+                            @csrf
+
+                            <input type="hidden" name="from" value="{{ $from }}">
+                            <input type="hidden" name="to" value="{{ $to }}">
+                            <input type="hidden" name="active_tab" class="active-tab-input" value="tabDrivers">
+                            <input type="hidden" name="person_type" value="driver">
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-body p-0">
+
+                                    <div
+                                        class="p-3 border-bottom d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                                        <div>
+                                            <div class="fw-bold text-info">{{ $employee['name'] }} <span
+                                                    class="text-muted small ms-1">Driver</span></div>
+                                        </div>
+
+                                        <div class="d-flex justify-content-end align-items-center gap-2">
+
+                                            <span class="badge bg-{{ $badge }}">{{ $status }}</span>
+
+                                            @if ($status !== 'PAID')
+                                                <button type="button" class="btn btn-sm btn-success pay-btn"
+                                                    data-bs-toggle="modal" data-bs-target="#payModal"
+                                                    data-person-id="{{ $employee['employee_id'] }}"
+                                                    data-person-type="driver" data-name="{{ $employee['name'] }}"
+                                                    data-trips="{{ count($employee['dispatchList']) }}"
+                                                    data-amount="{{ $employee['totalSalary'] }}"
+                                                    data-balance-advance="{{ $employee['latest_balance_advance'] ?? 0 }}">
+                                                    Pay
+                                                </button>
+                                            @endif
+
+                                        </div>
+                                    </div>
+
+                                    <div class="overflow-x-auto">
+                                        <table class="table table-bordered payroll-table mb-0 w-full">
+                                            <thead>
+                                                <tr class="text-center">
+                                                    <th class="whitespace-nowrap">DATE</th>
+                                                    <th class="whitespace-nowrap">COMPANY</th>
+                                                    <th class="break-words">DESTINATION</th>
+                                                    <th class="vertical">TRIPS RATE</th>
+                                                    <th class="vertical">PAY RATE</th>
+                                                    <th class="vertical">ALLOWANCE</th>
+                                                    <th class="vertical">TOTAL AMOUNT</th>
+                                                </tr>
+                                            </thead>
+
+                                            <tbody>
+                                                @foreach ($employee['dispatchList'] as $r)
+                                                    <tr>
+                                                        <td class="text-center" data-label="Date">{{ $r['dispatchDate'] }}
+                                                        </td>
+                                                        <td class="text-center" data-label="Company">{{ $r['company'] }}
+                                                            <br>
+                                                            <span class="badge bg-primary">{{ $r['dispatchCode'] }}</span>
+                                                        </td>
+                                                        <td class="break-words" data-label="Destination">
+                                                            {{ $r['destination'] }}</td>
+                                                        <td>{{ number_format($r['amountRate'], 2) }}</td>
+                                                        <td>{{ number_format($r['payRate'], 2) }}</td>
+                                                        <td>{{ number_format($r['allowance'], 2) }}</td>
+
+                                                        <td class="text-end fw-bold" data-label="Totals">
+                                                            {{ number_format($r['totalPay'], 2) }}
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+
+                                            <tfoot>
+                                                <tr>
+                                                    <th colspan="5" class="text-end">TOTAL</th>
+                                                    <th class="text-end">
+                                                        ₱ {{ number_format($employee['totalSalary'], 2) }}
+                                                    </th>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    @empty
+
+                    @endforelse
+                    {{--  @forelse($driversPayroll as $employee)
                         @php
                             $status = $p['status'] ?? 'UNPAID';
                             $badge = match ($status) {
@@ -122,7 +233,7 @@
                                                 <button type="button" class="btn btn-sm btn-success pay-btn"
                                                     data-bs-toggle="modal" data-bs-target="#payModal"
                                                     data-person-id="{{ $p['person_id'] }}" data-person-type="driver"
-                                                    data-name="{{ $p['name'] }}" data-trips="{{ count($p['rows']) }}"
+                                                    data-name="{{ $p['name'] }}" data-trips="{{ count($p['totalDispatch']) }}"
                                                     data-amount="{{ $p['payroll_total'] }}"
                                                     data-balance-advance="{{ $p['latest_balance_advance'] ?? 0 }}">
                                                     Pay
@@ -187,7 +298,7 @@
                         </form>
                     @empty
                         <div class="alert alert-light border">No driver payroll rows found.</div>
-                    @endforelse
+                    @endforelse --}}
                 </div>
 
             </div>
